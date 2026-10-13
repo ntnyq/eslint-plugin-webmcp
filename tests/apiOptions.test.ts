@@ -228,6 +228,7 @@ tester.run(
       },
       {
         code: 'document.modelContext.removeEventListener("toolcancel", refresh)',
+        settings: chrome,
         errors: [{ messageId: 'unknown' }],
       },
     ],

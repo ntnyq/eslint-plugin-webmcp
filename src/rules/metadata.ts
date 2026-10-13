@@ -1,7 +1,7 @@
 import { isDefinition } from '../analysis/api'
 import { readObject, readValue } from '../analysis/static'
 import { createApiRule, stringListOption } from '../createRule'
-import { ANNOTATIONS, TOOL_PROPERTIES } from '../profiles'
+import { PROFILES, TOOL_PROPERTIES } from '../profiles'
 
 export const noUnknownToolProperties = createApiRule({
   name: 'no-unknown-tool-properties',
@@ -66,7 +66,7 @@ export const validAnnotations = createApiRule({
     }
     for (const [name, property] of readObject(analyzer.source, node)
       ?.properties ?? []) {
-      if (ANNOTATIONS.includes(name)) {
+      if (PROFILES[analyzer.settings.target].annotations.includes(name)) {
         const value = readValue(analyzer.source, property.value)
         if (
           value.kind === 'known' &&

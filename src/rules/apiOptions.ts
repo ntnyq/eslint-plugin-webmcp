@@ -3,7 +3,7 @@ import type { ApiAnalyzer, ApiCall } from '../analysis/api'
 import { getKey, isGlobal, unwrap } from '../analysis/bindings'
 import { readString, readValue, resolveExpression } from '../analysis/static'
 import { createApiRule, stringListOption } from '../createRule'
-import { API_METHODS, API_OPTIONS } from '../profiles'
+import { API_METHODS, API_OPTIONS, PROFILES } from '../profiles'
 
 export function isCurrentCall(call: ApiCall): boolean {
   return (
@@ -52,8 +52,7 @@ export const requireApiArguments = createApiRule({
   defaultOptions: [],
   messages: {
     missing: '{{method}} requires a tool argument.',
-    input:
-      'chrome-2026-09-01 requires a JSON text input argument for executeTool.',
+    input: '{{target}} requires a JSON text input argument for executeTool.',
   },
   check(call, analyzer, context) {
     if (
@@ -69,11 +68,16 @@ export const requireApiArguments = createApiRule({
     } else if (
       isCurrentCall(call) &&
       call.method === 'executeTool' &&
-      analyzer.settings.target === 'chrome-2026-09-01' &&
+      PROFILES[analyzer.settings.target].executeInput ===
+        'required-json-text' &&
       call.node.arguments.length === 1 &&
       call.node.arguments[0]?.type !== 'SpreadElement'
     ) {
-      context.report({ node: call.node, messageId: 'input' })
+      context.report({
+        node: call.node,
+        messageId: 'input',
+        data: { target: analyzer.settings.target },
+      })
     }
   },
 })

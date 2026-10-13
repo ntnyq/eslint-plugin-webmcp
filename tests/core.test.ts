@@ -135,6 +135,23 @@ tester.run('valid-tool-name', rules['valid-tool-name'], {
     'const context = document.modelContext; context.registerTool = custom; context.registerTool({name: "bad name"})',
     'const context = document.modelContext; const alias = context; alias.registerTool = custom; context.registerTool({name: "bad name"})',
     'const context = document.modelContext; const alias = context; mutate(alias); context.registerTool({name: "bad name"})',
+    ...[
+      '({ registerTool: context.registerTool } = custom)',
+      '({ nested: { registerTool: context.registerTool } } = custom)',
+      '[context.registerTool] = callbacks',
+      '[...context.registerTool] = callbacks',
+      '({ ...context.registerTool } = custom)',
+      '({ registerTool: context.registerTool = fallback } = custom)',
+      'for (context.registerTool of callbacks) {}',
+      'for (context.registerTool in callbacks) {}',
+      'for ({ registerTool: context.registerTool } of callbacks) {}',
+      '(context.registerTool as unknown) = custom',
+      'delete (context.registerTool!)',
+    ].map(
+      mutation =>
+        `const context = document.modelContext; ${mutation}; context.registerTool({name: "bad name"})`,
+    ),
+    'const context = document.modelContext; const alias = context; ({ registerTool: alias.registerTool } = custom); context.registerTool({name: "bad name"})',
     'let context = document.modelContext; context = other; context.registerTool({name: "bad name"})',
     'const name = "bad name"; function f() { document.modelContext.registerTool({name}) }',
   ],
@@ -174,6 +191,15 @@ tester.run('valid-tool-name', rules['valid-tool-name'], {
       code: "const context = document.modelContext; context.getTools(); context.registerTool({name: 'bad name'})",
       errors: [{ messageId: 'invalid' }],
     },
+    ...[
+      'copy = context.registerTool',
+      '({ [context.registerTool]: copy } = custom)',
+      '({ registerTool: copy = context.registerTool } = custom)',
+      'for (const callback of context.callbacks) {}',
+    ].map(read => ({
+      code: `const context = document.modelContext; ${read}; context.registerTool({name: "bad name"})`,
+      errors: [{ messageId: 'invalid' as const }],
+    })),
   ],
 })
 

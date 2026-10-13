@@ -9,7 +9,7 @@ This is an ESM TypeScript ESLint plugin for browser WebMCP APIs.
 - `src/analysis/` handles API recognition, bindings, and static values.
 - `tests/` contains rule, integration, and executable documentation tests.
 - `docs/rules/<rule-name>.md` documents individual rules; `docs/analysis.md` and `docs/targets.md` define analysis boundaries and target contracts.
-- `scripts/smoke.mjs` checks the built package. `dist/` is generated output; do not edit it directly.
+- `scripts/smoke.ts` checks the built package via tsx. `dist/` is generated output; do not edit it directly.
 
 ## Build, Test, and Development Commands
 

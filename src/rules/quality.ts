@@ -1,7 +1,7 @@
 import { isDefinition } from '../analysis/api'
 import { getField, readObject, readString, readValue } from '../analysis/static'
 import { createApiRule, stringListOption } from '../createRule'
-import { ANNOTATIONS } from '../profiles'
+import { ANNOTATIONS, PROFILES } from '../profiles'
 import { isValidToolName } from './core'
 import { visitParameters } from './schema'
 
@@ -236,7 +236,10 @@ export const requireExplicitAnnotations = createApiRule({
       field.kind === 'known'
         ? readValue(analyzer.source, field.node)
         : undefined
-    for (const name of options.fields) {
+    const fields = options.fields.filter(name =>
+      PROFILES[analyzer.settings.target].annotations.includes(name),
+    )
+    for (const name of fields) {
       const annotation = getField(object, name)
       const hint =
         annotation.kind === 'known'

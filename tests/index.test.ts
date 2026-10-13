@@ -96,7 +96,7 @@ describe('public plugin and config', () => {
       target: 'chrome-2026-09-01',
     })
     expect(plugin.configs.recommended.settings?.['webmcp']).toStrictEqual({
-      target: 'draft-2026-09-04',
+      target: 'draft-2026-10-13',
     })
     expect(
       new Linter().verify('document.modelContext.registerTool({})', config, {

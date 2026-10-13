@@ -4,7 +4,7 @@ Catch unrecognized native ModelContext event names.
 
 Recommended: **—**. Strict: **warn**. No automatic fix.
 
-Checks static event names in native addEventListener/removeEventListener calls. toolchange is the only declared native event. EventTarget custom events are legal; list intentional names in allowEvents. Other EventTargets are excluded.
+Checks static event names in native addEventListener/removeEventListener calls. September targets declare only toolchange. October targets also declare toolactivated and toolcancel on document.modelContext. EventTarget custom events are legal; list intentional names in allowEvents. Other EventTargets and event-handler property assignments are excluded.
 
 ## Incorrect
 

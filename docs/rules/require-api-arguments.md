@@ -4,7 +4,7 @@ Require mandatory WebMCP call arguments.
 
 Recommended: **error**. Strict: **error**. No automatic fix.
 
-registerTool and executeTool require their tool argument. The Chrome target also requires the second executeTool input argument. getTools takes no required argument. Spreads with unknown arity are skipped and extra arguments are not rejected.
+registerTool and executeTool require their tool argument. Only `chrome-2026-09-01` also requires the second executeTool input argument. Both draft targets and `chrome-2026-10-14` accept an omitted input. getTools takes no required argument. Spreads with unknown arity are skipped and extra arguments are not rejected.
 
 ## Incorrect
 

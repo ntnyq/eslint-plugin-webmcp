@@ -4,7 +4,7 @@ Report legacy WebMCP entry points and removed methods.
 
 Recommended: **error**. Strict: **error**. No automatic fix.
 
-Both targets use the document receiver. Calls to provideContext, clearContext and unregisterTool are migration errors. This rule does not rewrite an API migration.
+All targets use the document receiver. Calls to provideContext, clearContext and unregisterTool are migration errors. This rule does not rewrite an API migration.
 
 ## Incorrect
 

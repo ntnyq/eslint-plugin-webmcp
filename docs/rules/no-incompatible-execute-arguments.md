@@ -4,7 +4,7 @@ Use the executeTool input representation required by the target.
 
 Recommended: **error**. Strict: **error**. No automatic fix.
 
-Examples use the default draft target. The draft expects an optional object. The Chrome target expects JSON text and warns on object/array syntax; require-api-arguments owns its required second argument. Dynamic expressions are skipped.
+Examples use the default `draft-2026-10-13` target. Both draft targets and `chrome-2026-10-14` expect an optional object. Only `chrome-2026-09-01` expects JSON text and warns on object/array syntax; require-api-arguments owns its required second argument. Dynamic expressions are skipped.
 
 ## Incorrect
 

@@ -4,7 +4,7 @@ Use supported hint names and explicit boolean values.
 
 Recommended: **—**. Strict: **warn**. No automatic fix.
 
-Recognizes readOnlyHint, untrustedContentHint and consequentialHint. Statically known values other than boolean/undefined produce authoring warnings; strings such as false are truthy. Unknown hints may be ignored rather than throwing. Annotations cannot prove safety or callback side effects.
+All targets recognize readOnlyHint, untrustedContentHint and consequentialHint. The October targets also recognize debugging; September targets report it as unknown. Statically known values other than boolean/undefined produce authoring warnings; strings such as false are truthy. Unknown hints may be ignored rather than throwing. Annotations cannot prove safety or callback side effects.
 
 ## Incorrect
 

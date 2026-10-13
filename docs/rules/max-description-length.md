@@ -4,7 +4,7 @@ Apply configurable Unicode code-point budgets to descriptions.
 
 Recommended: **—**. Strict: **—**. No automatic fix.
 
-Optional code-point budgets, defaulting to tool 500 and parameter 150. These are configurable authoring limits, not browser or token limits. unit accepts codePoint. Surrogate pairs count as one code point. No text is truncated.
+Optional code-point budgets, defaulting to tool 500 and parameter 150. These are configurable authoring limits, not browser or token limits. unit accepts codePoint. Surrogate pairs count as one code point. Parameter checks skip schema branches that could be replaced by a `toJSON` serializer, while unaffected siblings are checked. No text is truncated.
 
 ## Incorrect
 

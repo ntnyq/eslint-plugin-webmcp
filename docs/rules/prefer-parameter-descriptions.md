@@ -4,7 +4,7 @@ Describe statically known input parameters.
 
 Recommended: **—**. Strict: **warn**. No automatic fix.
 
-Visits properties inside schema keywords, including nested and composed schemas. Requires a provided nonempty description where absence is provable. Dynamic descriptions, boolean schemas and $ref parameter objects are skipped. Examples/default data are not traversed as schemas.
+Visits properties inside schema keywords, including nested and composed schemas. Requires a provided nonempty description where absence is provable. Dynamic descriptions, boolean schemas and `$ref`/`$dynamicRef` parameter objects are skipped. Branches that could be replaced by a `toJSON` serializer are skipped, while unaffected siblings are checked. Examples/default data are not traversed as schemas.
 
 ## Incorrect
 

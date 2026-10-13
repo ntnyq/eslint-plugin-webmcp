@@ -49,31 +49,33 @@
     "prepare": "husky",
     "prepublishOnly": "pnpm run build",
     "release": "run-s release:check release:version",
-    "release:check": "run-s format:check lint typecheck test build smoke",
+    "release:check": "run-s format:check lint build typecheck test smoke",
     "release:version": "bumpp",
-    "smoke": "node scripts/smoke.mjs",
+    "smoke": "tsx scripts/smoke.ts",
     "test": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@typescript-eslint/utils": "^8.69.0",
+    "@typescript-eslint/utils": "^8.71.2",
     "ajv": "^8.20.0"
   },
   "devDependencies": {
     "@ntnyq/tsconfig": "^3.1.0",
-    "@types/node": "^26.4.1",
-    "@typescript-eslint/parser": "^8.69.0",
-    "@typescript-eslint/rule-tester": "^8.69.0",
+    "@types/node": "^26.6.5",
+    "@typescript-eslint/parser": "^8.71.2",
+    "@typescript-eslint/rule-tester": "^8.71.2",
+    "@typescript/native": "npm:typescript@~7.0.2",
     "bumpp": "^12.3.0",
-    "eslint": "^10.10.0",
+    "eslint": "^10.12.0",
     "husky": "^9.1.7",
     "nano-staged": "^1.0.2",
     "npm-run-all2": "^9.0.3",
-    "oxfmt": "^0.66.0",
-    "oxlint": "^1.81.0",
-    "tsdown": "^0.23.0",
-    "typescript": "~6.0.3",
-    "vitest": "^5.0.0"
+    "oxfmt": "^0.73.0",
+    "oxlint": "^1.88.0",
+    "tsdown": "^0.23.1",
+    "tsx": "^4.23.15",
+    "typescript": "npm:@typescript/typescript6@~6.0.2",
+    "vitest": "^5.0.4"
   },
   "peerDependencies": {
     "eslint": "^9.0.0 || ^10.0.0"
@@ -85,5 +87,5 @@
   "engines": {
     "node": "^22.13.0 || >=24.0.0"
   },
-  "packageManager": "pnpm@12.3.4"
+  "packageManager": "pnpm@12.11.2"
 }

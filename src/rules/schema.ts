@@ -2,13 +2,16 @@ import type { TSESLint, TSESTree } from '@typescript-eslint/utils'
 import { Ajv2020 } from 'ajv/dist/2020.js'
 import { isDefinition } from '../analysis/api'
 import {
+  getField,
+  isDefinitelyNonCallable,
   readObject,
   readString,
   readValue,
   resolveExpression,
 } from '../analysis/static'
-import type { StaticValue } from '../analysis/static'
+import type { ObjectFacts, StaticValue } from '../analysis/static'
 import { createApiRule } from '../createRule'
+import { PROFILES } from '../profiles'
 
 type InputSchemaOptions = [
   { mode: 'platform' } | { mode: 'json-schema'; dialect: '2020-12' },
@@ -36,6 +39,23 @@ function getValidator(): Ajv2020 {
   return validator
 }
 
+function readSchemaObject(
+  source: TSESLint.SourceCode,
+  node: TSESTree.Node,
+): ObjectFacts | undefined {
+  const object = readObject(source, node)
+  const serializer = getField(object, 'toJSON')
+  // Unknown spreads can supply a serializer that replaces this entire branch.
+  if (
+    serializer.kind === 'missing' ||
+    (serializer.kind === 'known' &&
+      isDefinitelyNonCallable(source, serializer.node))
+  ) {
+    return object
+  }
+  return undefined
+}
+
 /**
  * Visit schema keywords only, never enum/default/example data or remote references.
  *
@@ -56,7 +76,7 @@ export function visitParameters(
   if (depth > 20 || remaining.remaining-- <= 0) {
     return
   }
-  const object = readObject(source, node)
+  const object = readSchemaObject(source, node)
   if (!object) {
     return
   }
@@ -66,9 +86,9 @@ export function visitParameters(
         key,
       )
     ) {
-      for (const [name, child] of readObject(source, property.value)
+      for (const [name, child] of readSchemaObject(source, property.value)
         ?.properties ?? []) {
-        if (key === 'properties') {
+        if (key === 'properties' && readSchemaObject(source, child.value)) {
           visit(name, child.value)
         }
         visitParameters(source, child.value, visit, depth + 1, remaining)
@@ -210,7 +230,7 @@ export const noIncompatibleExecuteArguments = createApiRule({
     }
     const fact = readValue(analyzer.source, node)
     const expression = resolveExpression(analyzer.source, node)
-    if (analyzer.settings.target === 'draft-2026-09-04') {
+    if (PROFILES[analyzer.settings.target].executeInput === 'optional-object') {
       if (
         fact.kind === 'known' &&
         fact.value !== undefined &&
@@ -251,7 +271,11 @@ export const preferParameterDescriptions = createApiRule({
     }
     visitParameters(analyzer.source, node, (name, schema) => {
       const object = readObject(analyzer.source, schema)
-      if (!object || object.properties.has('$ref')) {
+      if (
+        !object ||
+        object.properties.has('$ref') ||
+        object.properties.has('$dynamicRef')
+      ) {
         return
       }
       const description = object.properties.get('description')?.value

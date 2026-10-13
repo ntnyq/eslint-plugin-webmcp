@@ -1,5 +1,6 @@
 import { getField, readString, readValue } from '../analysis/static'
 import { createApiRule, stringListOption } from '../createRule'
+import { PROFILES } from '../profiles'
 import { isCurrentCall } from './apiOptions'
 
 export const validRegisteredTool = createApiRule({
@@ -57,7 +58,7 @@ export const noUnknownModelContextEvents = createApiRule({
   schema: stringListOption('allowEvents'),
   messages: {
     unknown:
-      '{{target}} declares the native event "toolchange", not "{{event}}". Allow intentional custom events explicitly.',
+      'Event "{{event}}" is not declared by {{target}}. Native events: {{events}}. Allow intentional custom events explicitly.',
   },
   check(call, analyzer, context, [options]) {
     if (
@@ -72,13 +73,17 @@ export const noUnknownModelContextEvents = createApiRule({
     if (
       node &&
       event !== undefined &&
-      event !== 'toolchange' &&
+      !PROFILES[analyzer.settings.target].events.includes(event) &&
       !options.allowEvents.includes(event)
     ) {
       context.report({
         node,
         messageId: 'unknown',
-        data: { event, target: analyzer.settings.target },
+        data: {
+          event,
+          target: analyzer.settings.target,
+          events: PROFILES[analyzer.settings.target].events.join(', '),
+        },
       })
     }
   },

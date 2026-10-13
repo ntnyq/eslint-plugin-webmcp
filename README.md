@@ -4,7 +4,7 @@
 [![NPM VERSION](https://img.shields.io/npm/v/eslint-plugin-webmcp.svg)](https://www.npmjs.com/package/eslint-plugin-webmcp)
 [![LICENSE](https://img.shields.io/github/license/ntnyq/eslint-plugin-webmcp.svg)](https://github.com/ntnyq/eslint-plugin-webmcp/blob/main/LICENSE)
 
-Conservative ESLint rules for browser WebMCP tool definitions and consumers. Includes **24 rules**, `recommended` and `strict` Flat Config presets, and two fixed API targets.
+Conservative ESLint rules for browser WebMCP tool definitions and consumers. Includes **24 rules**, `recommended` and `strict` Flat Config presets, and four fixed API targets.
 
 Requires ESLint 9 or 10 and Node.js `^22.13.0 || >=24.0.0`. ESM only. This initial implementation covers imperative JavaScript and TypeScript; it does not lint HTML or Vue templates.
 
@@ -43,7 +43,7 @@ export default [
 ]
 ```
 
-Install `@typescript-eslint/parser` separately. This checkout tests typescript-eslint 8.69 with TypeScript 6.0; follow your parser's supported TypeScript range.
+Install `@typescript-eslint/parser` separately. This checkout tests typescript-eslint 8.71 with the TypeScript 6 compatibility API and uses TypeScript 7 for type checking. The development aliases `typescript` → `@typescript/typescript6` and `@typescript/native` → `typescript` follow the [official side-by-side installation guidance](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0). Follow your parser's supported TypeScript range.
 
 ## Fixed API targets
 
@@ -52,7 +52,7 @@ import { createConfig } from 'eslint-plugin-webmcp'
 
 export default [
   createConfig({
-    target: 'chrome-2026-09-01',
+    target: 'chrome-2026-10-14',
     preset: 'strict',
     files: ['src/**/*.{js,ts,tsx}'],
   }),
@@ -61,12 +61,16 @@ export default [
 
 | Target                       | Entry point             | `executeTool` input               |
 | ---------------------------- | ----------------------- | --------------------------------- |
-| `draft-2026-09-04` (default) | `document.modelContext` | Optional object, defaults to `{}` |
+| `draft-2026-10-13` (default) | `document.modelContext` | Optional object, defaults to `{}` |
+| `chrome-2026-10-14`          | `document.modelContext` | Optional object, defaults to `{}` |
+| `draft-2026-09-04`           | `document.modelContext` | Optional object, defaults to `{}` |
 | `chrome-2026-09-01`          | `document.modelContext` | Required JSON text                |
 
-Both snapshots use Promise-based registration, `options.signal` for unregistration and the `toolchange` event. The Chrome profile is backed by dated documentation and a fixed Chromium development commit; it does not claim that every Chrome release implements that snapshot. See [sources and snapshot details](docs/targets.md).
+All snapshots use Promise-based registration, `options.signal` for unregistration and the `toolchange` event. The October targets also support `annotations.debugging`, `toolactivated` and `toolcancel`. Chrome profiles are backed by fixed Chromium development commits; they do not claim that every Chrome release implements those snapshots. See [sources and snapshot details](docs/targets.md).
 
-Manual configurations can set `settings: { webmcp: { target: 'draft-2026-09-04' } }`. Unknown targets, presets, invalid file lists and malformed wrapper settings produce configuration errors. There is no floating `latest` or partially supported legacy target.
+Manual configurations can set `settings: { webmcp: { target: 'draft-2026-10-13' } }`. Unknown targets, presets, invalid file lists and malformed wrapper settings produce configuration errors. There is no floating `latest` or partially supported legacy target.
+
+The default has changed from `draft-2026-09-04` to `draft-2026-10-13`, including both presets and rules without explicit settings. Pin `draft-2026-09-04` to retain the previous diagnostics. Both September targets retain their original API contracts; see the [migration notes](docs/targets.md#migrating-to-the-october-targets).
 
 ## Rules and presets
 

@@ -2,9 +2,32 @@
 
 The target is a static analysis contract, not browser feature detection. Diagnostics depend on the source, plugin version, rule options and `settings.webmcp`; they never query a browser or the network.
 
+## draft-2026-10-13
+
+The default profile follows the [WebMCP specification at commit eada13b575187ba9a523adc0c52e294ebdb6b597](https://github.com/webmachinelearning/webmcp/blob/eada13b575187ba9a523adc0c52e294ebdb6b597/index.bs), dated 2026-10-13.
+
+It retains the September draft's document receiver, required tool dictionaries, registration lifecycle and API options. `executeTool` accepts an optional object input; omission supplies an empty object. Discovered `inputSchema` values are objects. The annotation set adds the boolean `debugging` field, and ModelContext declares `toolchange`, `toolactivated` and `toolcancel` events.
+
+## chrome-2026-10-14
+
+This profile pins the [Chromium ModelContext IDL at c954af10a8f0a843f40f7999f2b46daccd35868e](https://chromium.googlesource.com/chromium/src/+/c954af10a8f0a843f40f7999f2b46daccd35868e/third_party/blink/renderer/core/script_tools/model_context.idl) and its [tool/annotation dictionaries](https://chromium.googlesource.com/chromium/src/+/c954af10a8f0a843f40f7999f2b46daccd35868e/third_party/blink/renderer/core/script_tools/model_context_tool.idl), inspected on 2026-10-14. The development snapshot reports Chromium 158.0.8104.0; the target date identifies this inspection, not a stable Chrome release.
+
+The checked input, annotation and event contracts match `draft-2026-10-13`. In particular, `executeTool` accepts an optional object input and discovery returns schema objects. Return-value differences and discovery-result data flow are not analyzed by this release. The [Chrome imperative guide](https://developer.chrome.com/docs/ai/webmcp/imperative-api#execute_tool) documents the move away from JSON text input from Chrome 155.
+
+## Migrating to the October targets
+
+The default target, `recommended` preset, `strict` preset and manually enabled rules without target settings now use `draft-2026-10-13`. Explicit September targets retain their original semantics.
+
+- To keep previous default diagnostics, set `target: 'draft-2026-09-04'` in `createConfig`, or set `settings.webmcp.target` to that value.
+- When migrating from `chrome-2026-09-01` to `chrome-2026-10-14`, pass an input object directly instead of serialized JSON text. Omit the second argument for tools with no inputs.
+- October targets recognize `annotations.debugging` and the `toolactivated`/`toolcancel` events on `document.modelContext`. The September targets still report these as unknown.
+- `require-explicit-annotations` accepts `debugging` in its `fields` option. It skips fields unsupported by the selected target, allowing a shared rule policy without requiring unsupported annotations on older targets. Its default fields are unchanged.
+
+The event rule checks `addEventListener`/`removeEventListener` calls. It does not migrate legacy `window.ontoolactivated`/`window.ontoolcancel` assignments; the [Chrome declarative guide](https://developer.chrome.com/docs/ai/webmcp/declarative-api) documents their removal from Chrome 156.
+
 ## draft-2026-09-04
 
-The default profile follows the [WebMCP specification at commit 7b3f50f31848b529e69bedbbdf8da0edccba055f](https://github.com/webmachinelearning/webmcp/blob/7b3f50f31848b529e69bedbbdf8da0edccba055f/index.bs).
+This historical profile follows the [WebMCP specification at commit 7b3f50f31848b529e69bedbbdf8da0edccba055f](https://github.com/webmachinelearning/webmcp/blob/7b3f50f31848b529e69bedbbdf8da0edccba055f/index.bs).
 
 - `document.modelContext` provides `registerTool`, `getTools` and `executeTool`.
 - Tool definitions require `name`, `description` and callable `execute`. `title`, `inputSchema` and `annotations` are optional.
@@ -41,4 +64,4 @@ This profile does not select or claim support for a specific stable Chrome versi
 - [Secure Contexts: potentially trustworthy origins](https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy): origin trust is environment-dependent; this release checks parseability, not a simplified HTTPS allowlist.
 - [ESLint plugin documentation](https://eslint.org/docs/latest/extend/plugins): Flat Config plugin and preset contracts.
 
-Sources were checked on 2026-09-07. The package never fetches them while linting.
+September sources were checked on 2026-09-07; October sources were checked on 2026-10-14. The package never fetches them while linting.

@@ -1,6 +1,6 @@
 import type { WebMcpSettings, WebMcpTarget, WebMcpWrapper } from './types'
 
-export const DEFAULT_TARGET: WebMcpTarget = 'draft-2026-09-04'
+export const DEFAULT_TARGET: WebMcpTarget = 'draft-2026-10-13'
 export const TOOL_PROPERTIES = [
   'name',
   'title',
@@ -9,11 +9,41 @@ export const TOOL_PROPERTIES = [
   'execute',
   'annotations',
 ]
-export const ANNOTATIONS = [
+const LEGACY_ANNOTATIONS = [
   'readOnlyHint',
   'untrustedContentHint',
   'consequentialHint',
 ]
+export const ANNOTATIONS = [...LEGACY_ANNOTATIONS, 'debugging']
+
+interface WebMcpProfile {
+  executeInput: 'optional-object' | 'required-json-text'
+  annotations: readonly string[]
+  events: readonly string[]
+}
+
+export const PROFILES: Readonly<Record<WebMcpTarget, WebMcpProfile>> = {
+  'draft-2026-09-04': {
+    executeInput: 'optional-object',
+    annotations: LEGACY_ANNOTATIONS,
+    events: ['toolchange'],
+  },
+  'chrome-2026-09-01': {
+    executeInput: 'required-json-text',
+    annotations: LEGACY_ANNOTATIONS,
+    events: ['toolchange'],
+  },
+  'draft-2026-10-13': {
+    executeInput: 'optional-object',
+    annotations: ANNOTATIONS,
+    events: ['toolchange', 'toolactivated', 'toolcancel'],
+  },
+  'chrome-2026-10-14': {
+    executeInput: 'optional-object',
+    annotations: ANNOTATIONS,
+    events: ['toolchange', 'toolactivated', 'toolcancel'],
+  },
+}
 export const API_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   registerTool: ['exposedTo', 'signal'],
   getTools: ['fromOrigins'],
@@ -30,11 +60,16 @@ export function resolveTarget(target: unknown): WebMcpTarget {
   if (target === undefined) {
     return DEFAULT_TARGET
   }
-  if (target === 'draft-2026-09-04' || target === 'chrome-2026-09-01') {
+  if (
+    target === 'draft-2026-09-04' ||
+    target === 'chrome-2026-09-01' ||
+    target === 'draft-2026-10-13' ||
+    target === 'chrome-2026-10-14'
+  ) {
     return target
   }
   throw new Error(
-    'webmcp: target must be "draft-2026-09-04" or "chrome-2026-09-01".',
+    `webmcp: target must be one of ${Object.keys(PROFILES).join(', ')}.`,
   )
 }
 

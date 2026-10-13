@@ -85,6 +85,53 @@ function getExecutionOwner(node: TSESTree.Node): TSESTree.Node {
   return current
 }
 
+function isWriteTarget(node: TSESTree.MemberExpression): boolean {
+  let current: TSESTree.Node = node
+  while (current.parent) {
+    const { parent }: TSESTree.Node = current
+    switch (parent.type) {
+      case 'AssignmentExpression':
+      case 'ForInStatement':
+      case 'ForOfStatement': {
+        return parent.left === current
+      }
+      case 'UpdateExpression': {
+        return parent.argument === current
+      }
+      case 'UnaryExpression': {
+        return parent.operator === 'delete' && parent.argument === current
+      }
+      case 'Property': {
+        if (
+          parent.value !== current ||
+          parent.parent.type !== 'ObjectPattern'
+        ) {
+          return false
+        }
+        break
+      }
+      case 'AssignmentPattern': {
+        if (parent.left !== current) {
+          return false
+        }
+        break
+      }
+      case 'RestElement':
+      case 'ArrayPattern':
+      case 'ObjectPattern': {
+        break
+      }
+      default: {
+        if (unwrap(parent) !== node) {
+          return false
+        }
+      }
+    }
+    current = parent
+  }
+  return false
+}
+
 function hasSafeReceiverReferences(
   source: TSESLint.SourceCode,
   variable: TSESLint.Scope.Variable,
@@ -108,12 +155,7 @@ function hasSafeReceiverReferences(
         parent.type === 'MemberExpression' &&
         parent.object === reference.identifier
       ) {
-        const use = parent.parent
-        return (
-          use.type !== 'AssignmentExpression' &&
-          use.type !== 'UpdateExpression' &&
-          !(use.type === 'UnaryExpression' && use.operator === 'delete')
-        )
+        return !isWriteTarget(parent)
       }
       if (
         parent.type === 'VariableDeclarator' &&

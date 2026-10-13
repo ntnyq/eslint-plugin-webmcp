@@ -4,7 +4,7 @@ Require explicit evaluation of configured tool hints.
 
 Recommended: **—**. Strict: **—**. No automatic fix.
 
-Optional policy to explicitly evaluate selected fields, default readOnlyHint and consequentialHint. Missing or undefined hints are reported; unknown spreads/dynamic hints are skipped. fields accepts only the three native annotation names. It never chooses true or false for the author.
+Optional policy to explicitly evaluate selected fields, default readOnlyHint and consequentialHint. Missing or undefined hints are reported; unknown spreads/dynamic hints are skipped. fields accepts readOnlyHint, untrustedContentHint, consequentialHint and debugging. Fields unsupported by the selected target are skipped: debugging is required only on the October targets when explicitly configured. It never chooses true or false for the author.
 
 ## Incorrect
 

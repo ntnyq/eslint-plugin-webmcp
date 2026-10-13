@@ -1,7 +1,11 @@
 /**
  * Fixed upstream snapshots; the target is never inferred from the environment.
  */
-export type WebMcpTarget = 'draft-2026-09-04' | 'chrome-2026-09-01'
+export type WebMcpTarget =
+  | 'draft-2026-09-04'
+  | 'chrome-2026-09-01'
+  | 'draft-2026-10-13'
+  | 'chrome-2026-10-14'
 
 export type WebMcpPreset = 'recommended' | 'strict'
 
