@@ -169,4 +169,44 @@ describe('public plugin and config', () => {
       expect(rule.meta.docs?.url).toMatch(/\/docs\/rules\//u)
     }
   })
+
+  it('reports dictionary and serialized schema omissions through Flat Config', () => {
+    const messages = new Linter().verify(
+      `
+        document.modelContext.registerTool([])
+        document.modelContext.executeTool([])
+        document.modelContext.registerTool({
+          name: 'search', description: 'Search', execute() {},
+          inputSchema: {$schema: 42}, outputSchema: {$schema: null},
+        })
+        document.modelContext.registerTool({
+          name: 'find', description: 'Find', execute() {},
+          inputSchema: {properties: {query: {$ref: undefined, description: undefined}}},
+        })
+      `,
+      [
+        plugin.configs.strict,
+        {
+          rules: {
+            'webmcp/valid-input-schema': [
+              'error',
+              { mode: 'json-schema', dialect: '2020-12' },
+            ],
+            'webmcp/valid-output-schema': [
+              'error',
+              { mode: 'json-schema', dialect: '2020-12' },
+            ],
+          },
+        },
+      ],
+    )
+    expect(messages.map(message => message.messageId)).toStrictEqual([
+      ...Array.from({ length: 7 }, () => 'missing'),
+      'schema',
+      'schema',
+      'missing',
+    ])
+    expect(messages.filter(message => message.severity === 2)).toHaveLength(9)
+    expect(messages.filter(message => message.severity === 1)).toHaveLength(1)
+  })
 })

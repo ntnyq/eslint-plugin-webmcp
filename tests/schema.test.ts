@@ -78,6 +78,20 @@ for (const property of ['inputSchema', 'outputSchema'] as const) {
         code: registerSchema('{description: undefined, type: "object"}'),
         options: jsonOptions,
       },
+      {
+        code: registerSchema('{$schema: undefined, type: "object"}'),
+        options: jsonOptions,
+      },
+      {
+        code: registerSchema('{$schema: unknownDialect, type: "made-up"}'),
+        options: jsonOptions,
+      },
+      {
+        code: registerSchema(
+          '{$schema: "urn:example:dialect", type: "made-up"}',
+        ),
+        options: jsonOptions,
+      },
     ],
     invalid: [
       ...['null', 'false', '42', "'{}'", '1n'].map(schema => ({
@@ -131,6 +145,11 @@ for (const property of ['inputSchema', 'outputSchema'] as const) {
         '{required: ["query", "query"]}',
         '{properties: []}',
         '{minLength: -1}',
+        ...['null', '42', 'false', '[]', '{}'].map(
+          dialect => `{$schema: ${dialect}, type: "made-up"}`,
+        ),
+        '{$schema: undefined, type: "made-up"}',
+        '{$schema: "https://json-schema.org/draft/2020-12/schema#", type: "made-up"}',
         '[]',
       ].map(schema => ({
         code: registerSchema(schema),
@@ -186,6 +205,15 @@ tester.run(
     valid: [
       register('{properties: {query: {description: "搜索关键词"}}}'),
       register('{properties: {query: {description: translate("query")}}}'),
+      register('{properties: {query: {$ref: dynamicReference}}}'),
+      register('{properties: {query: {$dynamicRef: dynamicReference}}}'),
+      register(
+        '{properties: {query: {$ref: undefined, description: "Query"}}}',
+      ),
+      register(
+        '{properties: {query: {$ref: undefined, $dynamicRef: "#query"}}}',
+      ),
+      'function f(undefined) { document.modelContext.registerTool({inputSchema: {properties: {query: {description: undefined}}}}) }',
       register('{properties: {query: {$ref: "#/$defs/query"}}}'),
       register(
         '{$defs: {query: {$dynamicAnchor: "query", type: "string", description: "Search query"}}, properties: {query: {$dynamicRef: "#query"}}}',
@@ -200,6 +228,20 @@ tester.run(
       ),
     ],
     invalid: [
+      ...[
+        '{description: undefined}',
+        '{description: void 0}',
+        '{$ref: undefined}',
+        '{$dynamicRef: undefined}',
+        '{$ref: undefined, $dynamicRef: undefined, description: undefined}',
+      ].map(parameter => ({
+        code: register(`{properties: {query: ${parameter}}}`),
+        errors: [{ messageId: 'missing' as const, data: { name: 'query' } }],
+      })),
+      ...['description', '$ref', '$dynamicRef'].map(property => ({
+        code: `const omitted = undefined; document.modelContext.registerTool({inputSchema: {properties: {query: {${property}: omitted}}}})`,
+        errors: [{ messageId: 'missing' as const, data: { name: 'query' } }],
+      })),
       {
         code: register('{properties: {query: {type: "string"}}}'),
         errors: [{ messageId: 'missing' }],

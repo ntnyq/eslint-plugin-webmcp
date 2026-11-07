@@ -24,6 +24,9 @@ tester.run('require-tool-properties', rules['require-tool-properties'], {
     'server.registerTool({})',
     'navigator.modelContext.registerTool({})',
     'const tool = {}; tool.name = "search"; document.modelContext.registerTool(tool)',
+    'const tool = []; tool.name = "search"; document.modelContext.registerTool(tool)',
+    'const tool = []; consume(tool); document.modelContext.registerTool(tool)',
+    'const tool = []; function f() { document.modelContext.registerTool(tool) }',
     'const tool = {}; mutate(tool); document.modelContext.registerTool(tool)',
     'const tool = {}; const alias = tool; mutate(alias); document.modelContext.registerTool(tool)',
     'const tool = {}; export { tool }; document.modelContext.registerTool(tool)',
@@ -35,6 +38,17 @@ tester.run('require-tool-properties', rules['require-tool-properties'], {
     `const { registerTool } = document.modelContext; registerTool({})`,
   ],
   invalid: [
+    ...[
+      'document.modelContext.registerTool([])',
+      'document.modelContext.registerTool([unknown, ...items])',
+      'const tool = []; document.modelContext.registerTool(tool as object)',
+    ].map(code => ({
+      code,
+      errors: ['name', 'description', 'execute'].map(property => ({
+        messageId: 'missing' as const,
+        data: { property },
+      })),
+    })),
     {
       code: register(''),
       errors: [

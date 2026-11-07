@@ -8,6 +8,8 @@ Checks the optional `outputSchema` on tool definitions for `draft-2026-11-02` an
 
 This rule shares the conservative validator used by `valid-input-schema`. Platform mode rejects fully known primitives/null and BigInt serialization failures. Arrays count as objects at the platform boundary. Unknown values, dynamic subtrees, cycles, accessors and `toJSON` are skipped. Opt-in JSON Schema mode validates the JSON representation against the 2020-12 meta-schema; other declared dialects are skipped, and remote references are never fetched.
 
+In JSON Schema mode, a provided non-string `$schema` is invalid and cannot bypass validation as another dialect. `$schema: undefined` is omitted from JSON, so the configured 2020-12 dialect applies. Other string dialect declarations remain skipped.
+
 Callback return values are not analyzed or validated against the schema. This rule does not require an MCP response envelope, output descriptions or an output schema.
 
 ## Incorrect

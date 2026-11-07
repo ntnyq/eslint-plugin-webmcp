@@ -19,6 +19,8 @@ Getters, setters and `__proto__` keys can change dictionary conversion behavior 
 
 Object facts distinguish a known node, a provably absent field, and an unknown field. Statically known `undefined` remains distinct from unknown; required dictionary members set to `undefined` are reported. Duplicate explicit properties use the last value.
 
+Required tool dictionary checks also recognize array literals and safe const array aliases as missing named required members, regardless of their elements. This does not change the platform schema rules, where arrays remain objects. Mutable, shared and escaped aliases retain the usual conservative skips.
+
 Platform globals are assumed not to be monkey-patched or affected by prototype pollution. The analyzer does not prove effects of external code. Conservative alias restrictions may intentionally skip correct or incorrect code that a fuller data-flow analysis could understand.
 
 ## Schema checks

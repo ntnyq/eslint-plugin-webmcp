@@ -30,10 +30,10 @@ export const validRegisteredTool = createApiRule({
       return
     }
     const fact = readValue(analyzer.source, call.toolNode)
+    const expression = resolveExpression(analyzer.source, call.toolNode)
     if (
       PROFILES[analyzer.settings.target].executeToolArgument === 'native-tool'
     ) {
-      const expression = resolveExpression(analyzer.source, call.toolNode)
       // A literal cannot carry the native interface brand, even with getters,
       // unknown spreads or Tool.prototype. Unresolved handles remain unknown.
       if (
@@ -65,6 +65,7 @@ export const validRegisteredTool = createApiRule({
           ? readValue(analyzer.source, field.node)
           : undefined
       if (
+        expression.type === 'ArrayExpression' ||
         field.kind === 'missing' ||
         (value?.kind === 'known' && value.value === undefined)
       ) {

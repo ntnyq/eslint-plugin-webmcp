@@ -5,7 +5,6 @@ import {
   getField,
   isDefinitelyNonCallable,
   readObject,
-  readString,
   readValue,
   resolveExpression,
 } from '../analysis/static'
@@ -193,12 +192,21 @@ function createSchemaRule(property: 'inputSchema' | 'outputSchema') {
       if (typeof schema !== 'object' || schema === null) {
         return
       }
-      if (
-        '$schema' in schema &&
-        schema.$schema !== 'https://json-schema.org/draft/2020-12/schema' &&
-        schema.$schema !== 'https://json-schema.org/draft/2020-12/schema#'
-      ) {
-        return
+      if ('$schema' in schema) {
+        if (typeof schema.$schema !== 'string') {
+          context.report({
+            node,
+            messageId: 'schema',
+            data: { reason: '$schema must be a string' },
+          })
+          return
+        }
+        if (
+          schema.$schema !== 'https://json-schema.org/draft/2020-12/schema' &&
+          schema.$schema !== 'https://json-schema.org/draft/2020-12/schema#'
+        ) {
+          return
+        }
       }
       const ajv = getValidator()
       if (!ajv.validateSchema(schema)) {
@@ -231,21 +239,34 @@ export const preferParameterDescriptions = createApiRule({
     }
     visitParameters(analyzer.source, node, (name, schema) => {
       const object = readObject(analyzer.source, schema)
-      if (
-        !object ||
-        object.properties.has('$ref') ||
-        object.properties.has('$dynamicRef')
-      ) {
+      if (!object) {
         return
       }
-      const description = object.properties.get('description')?.value
-      const text = readString(analyzer.source, description)
+      const hasReference = ['$ref', '$dynamicRef'].some(property => {
+        const field = getField(object, property)
+        if (field.kind !== 'known') {
+          return field.kind === 'unknown'
+        }
+        const value = readValue(analyzer.source, field.node)
+        return value.kind === 'unknown' || value.value !== undefined
+      })
+      if (hasReference) {
+        return
+      }
+      const description = getField(object, 'description')
+      const value =
+        description.kind === 'known'
+          ? readValue(analyzer.source, description.node)
+          : undefined
       if (
-        (!description && object.complete) ||
-        (text !== undefined && text.trim().length === 0)
+        description.kind === 'missing' ||
+        (value?.kind === 'known' &&
+          (value.value === undefined ||
+            (typeof value.value === 'string' &&
+              value.value.trim().length === 0)))
       ) {
         context.report({
-          node: description ?? schema,
+          node: description.kind === 'known' ? description.node : schema,
           messageId: 'missing',
           data: { name },
         })

@@ -156,6 +156,8 @@ for (const {
         'import { tool } from "./tools"; document.modelContext.executeTool(tool)',
         'let tool = {}; tool = findTool(); document.modelContext.executeTool(tool)',
         'const tool = {}; consume(tool); document.modelContext.executeTool(tool)',
+        'const tool = []; consume(tool); document.modelContext.executeTool(tool)',
+        'const tool = []; tool.name = "search"; document.modelContext.executeTool(tool)',
         'const tool = {}; function f() { document.modelContext.executeTool(tool) }',
         'function f(document) { document.modelContext.executeTool({}) }',
         'function f(globalThis) { globalThis.document.modelContext.executeTool({}) }',
@@ -173,6 +175,19 @@ for (const {
             ]),
       ],
       invalid: [
+        ...[
+          'document.modelContext.executeTool([])',
+          'document.modelContext.executeTool([unknown, ...items])',
+          'const tool = []; document.modelContext.executeTool(tool satisfies object)',
+        ].map(code => ({
+          code,
+          errors: requiresNativeTool
+            ? [{ messageId: 'native' as const }]
+            : ['name', 'description', 'window', 'origin'].map(property => ({
+                messageId: 'missing' as const,
+                data: { property },
+              })),
+        })),
         ...["'search'", 'null', 'undefined', '42', 'false', '1n'].map(
           value => ({
             code: `document.modelContext.executeTool(${value})`,
@@ -194,7 +209,6 @@ for (const {
               '{__proto__: Tool.prototype}',
               '{get name() { return tool.name }}',
               '{[dynamic]: value}',
-              '[]',
               '[tool]',
               '() => tool',
               'function() {}',

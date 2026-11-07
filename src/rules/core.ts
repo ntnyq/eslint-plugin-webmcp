@@ -4,6 +4,7 @@ import {
   isDefinitelyNonCallable,
   readString,
   readValue,
+  resolveExpression,
 } from '../analysis/static'
 import { createApiRule } from '../createRule'
 import { LEGACY_METHODS } from '../profiles'
@@ -34,6 +35,10 @@ export const requireToolProperties = createApiRule({
       context.report({ node: call.toolNode, messageId: 'invalid' })
       return
     }
+    // Array elements cannot supply named dictionary members.
+    const isArray =
+      resolveExpression(analyzer.source, call.toolNode).type ===
+      'ArrayExpression'
     for (const property of ['name', 'description', 'execute']) {
       const field = getField(call.tool, property)
       const value =
@@ -41,6 +46,7 @@ export const requireToolProperties = createApiRule({
           ? readValue(analyzer.source, field.node)
           : undefined
       if (
+        isArray ||
         field.kind === 'missing' ||
         (value?.kind === 'known' && value.value === undefined)
       ) {
