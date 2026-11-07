@@ -4,7 +4,7 @@
 [![NPM VERSION](https://img.shields.io/npm/v/eslint-plugin-webmcp.svg)](https://www.npmjs.com/package/eslint-plugin-webmcp)
 [![LICENSE](https://img.shields.io/github/license/ntnyq/eslint-plugin-webmcp.svg)](https://github.com/ntnyq/eslint-plugin-webmcp/blob/main/LICENSE)
 
-Conservative ESLint rules for browser WebMCP tool definitions and consumers. Includes **24 rules**, `recommended` and `strict` Flat Config presets, and four fixed API targets.
+Conservative ESLint rules for browser WebMCP tool definitions and consumers. Includes **25 rules**, `recommended` and `strict` Flat Config presets, and six fixed API targets.
 
 Requires ESLint 9 or 10 and Node.js `^22.13.0 || >=24.0.0`. ESM only. This initial implementation covers imperative JavaScript and TypeScript; it does not lint HTML or Vue templates.
 
@@ -52,31 +52,35 @@ import { createConfig } from 'eslint-plugin-webmcp'
 
 export default [
   createConfig({
-    target: 'chrome-2026-10-14',
+    target: 'chrome-2026-11-07',
     preset: 'strict',
     files: ['src/**/*.{js,ts,tsx}'],
   }),
 ]
 ```
 
-| Target                       | Entry point             | `executeTool` input               |
-| ---------------------------- | ----------------------- | --------------------------------- |
-| `draft-2026-10-13` (default) | `document.modelContext` | Optional object, defaults to `{}` |
-| `chrome-2026-10-14`          | `document.modelContext` | Optional object, defaults to `{}` |
-| `draft-2026-09-04`           | `document.modelContext` | Optional object, defaults to `{}` |
-| `chrome-2026-09-01`          | `document.modelContext` | Required JSON text                |
+All targets use `document.modelContext`.
 
-All snapshots use Promise-based registration, `options.signal` for unregistration and the `toolchange` event. The October targets also support `annotations.debugging`, `toolactivated` and `toolcancel`. Chrome profiles are backed by fixed Chromium development commits; they do not claim that every Chrome release implements those snapshots. See [sources and snapshot details](docs/targets.md).
+| Target                       | `executeTool` first argument | `executeTool` input | `outputSchema` |
+| ---------------------------- | ---------------------------- | ------------------- | -------------- |
+| `draft-2026-11-02` (default) | `RegisteredTool` dictionary  | Optional object     | Supported      |
+| `chrome-2026-11-07`          | Native `Tool` handle         | Optional object     | Supported      |
+| `draft-2026-10-13`           | `RegisteredTool` dictionary  | Optional object     | Unsupported    |
+| `chrome-2026-10-14`          | `RegisteredTool` dictionary  | Optional object     | Unsupported    |
+| `draft-2026-09-04`           | `RegisteredTool` dictionary  | Optional object     | Unsupported    |
+| `chrome-2026-09-01`          | `RegisteredTool` dictionary  | Required JSON text  | Unsupported    |
 
-Manual configurations can set `settings: { webmcp: { target: 'draft-2026-10-13' } }`. Unknown targets, presets, invalid file lists and malformed wrapper settings produce configuration errors. There is no floating `latest` or partially supported legacy target.
+All snapshots use Promise-based registration, `options.signal` for unregistration and the `toolchange` event. The October and November targets also support `annotations.debugging`, `toolactivated` and `toolcancel`. Optional object input defaults to `{}`. Chrome profiles are backed by fixed Chromium development commits; they do not claim that every Chrome release implements those snapshots. See [sources and snapshot details](docs/targets.md).
 
-The default has changed from `draft-2026-09-04` to `draft-2026-10-13`, including both presets and rules without explicit settings. Pin `draft-2026-09-04` to retain the previous diagnostics. Both September targets retain their original API contracts; see the [migration notes](docs/targets.md#migrating-to-the-october-targets).
+Manual configurations can set `settings: { webmcp: { target: 'draft-2026-11-02' } }`. Unknown targets, presets, invalid file lists and malformed wrapper settings produce configuration errors. There is no floating `latest` or partially supported legacy target.
+
+The default is now `draft-2026-11-02`, including both presets and rules without explicit settings. Pin `draft-2026-10-13` to retain the previous default diagnostics. All four explicit September/October targets retain their original API contracts, including treating `outputSchema` as unsupported. For `chrome-2026-11-07`, pass the original `Tool` returned by `getTools()`; object copies and hand-written dictionaries lack its native identity. See the [November migration notes](docs/targets.md#migrating-to-the-november-targets).
 
 ## Rules and presets
 
 `recommended` enables provable API errors and the empty-description warning. `strict` includes recommended and additional metadata, option, origin and description warnings. Team-specific naming, titles, length budgets and explicit hint requirements remain opt-in.
 
-See the [complete rule table](docs/rules.md) for all 24 rules, defaults, examples and options. No rule automatically changes names, descriptions, callbacks, origins or registration lifetimes.
+See the [complete rule table](docs/rules.md) for all 25 rules, defaults, examples and options. No rule automatically changes names, descriptions, callbacks, origins or registration lifetimes.
 
 ```js
 import webmcp from 'eslint-plugin-webmcp'
@@ -86,6 +90,10 @@ export default [
   {
     rules: {
       'webmcp/valid-input-schema': [
+        'error',
+        { mode: 'json-schema', dialect: '2020-12' },
+      ],
+      'webmcp/valid-output-schema': [
         'error',
         { mode: 'json-schema', dialect: '2020-12' },
       ],
@@ -106,7 +114,7 @@ export default [
 ]
 ```
 
-By default, `valid-input-schema` checks only known platform boundary failures. Its opt-in JSON Schema mode validates the JSON representation against the 2020-12 meta-schema. It does not enforce object roots, closed properties or parameter descriptions, validate tool inputs at runtime, resolve remote references, or execute user code. Other explicitly declared dialects are skipped.
+By default, `valid-input-schema` and `valid-output-schema` check only known platform boundary failures. The output rule applies only to November targets and keeps the field optional. Their opt-in JSON Schema mode validates the JSON representation against the 2020-12 meta-schema. It does not enforce object roots, closed properties or parameter descriptions, validate tool inputs or callback results at runtime, resolve remote references, or execute user code. Other explicitly declared dialects are skipped.
 
 ## Tool-definition wrappers
 

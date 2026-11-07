@@ -23,9 +23,13 @@ Platform globals are assumed not to be monkey-patched or affected by prototype p
 
 ## Schema checks
 
-Platform mode checks fully statically readable values: a provided primitive/null schema is invalid, and BigInt within a serializable static object causes JSON serialization failure. `undefined` is treated as omission. Dynamic subtrees, cycles, accessors, functions and `toJSON` methods are not executed or fully modeled; unknown schemas are skipped. Arrays are objects at the platform layer.
+The input and output schema rules share the same validator. Output schemas are checked only by November targets and remain optional. Callback results are not inferred or checked against them. Platform mode checks fully statically readable values: a provided primitive/null schema is invalid, and BigInt within a serializable static object causes JSON serialization failure. `undefined` is treated as omission. Dynamic subtrees, cycles, accessors, functions and `toJSON` methods are not executed or fully modeled; unknown schemas are skipped. Arrays are objects at the platform layer.
 
 JSON Schema mode additionally validates the actual JSON representation with Ajv's 2020-12 meta-schema. There is no compilation of user schemas, remote `$ref` resolution, user format execution, input validation or claim that every contradictory schema is detected. Other declared dialects are skipped; formats and custom keywords are not rejected. Parameter-description traversal visits schema keywords only, not data inside defaults, examples or enums. Schema branches and property maps with a potentially callable `toJSON` are skipped, including unknown spreads that could supply it. A provably non-callable `toJSON` does not block traversal. Unaffected sibling branches remain analyzable. Parameter definitions using `$ref` or `$dynamicRef` are not assumed to lack descriptions.
+
+## Consumer tool arguments
+
+Draft targets and September/October Chrome targets inspect `RegisteredTool` dictionaries. The November Chrome target instead requires the native `Tool` interface: literals and object copies are rejected even when their dictionary fields cannot be read. No accessor or spread is executed to reach this conclusion. Safe const aliases and TypeScript wrappers are resolved using the same ownership limits as other values. Unresolved handles and arbitrary calls remain unknown; discovery provenance, native branding of unknown objects, metadata use and handle freshness are not analyzed.
 
 ## Performance and safety
 

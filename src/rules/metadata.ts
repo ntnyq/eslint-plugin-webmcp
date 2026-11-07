@@ -1,7 +1,7 @@
 import { isDefinition } from '../analysis/api'
 import { readObject, readValue } from '../analysis/static'
 import { createApiRule, stringListOption } from '../createRule'
-import { PROFILES, TOOL_PROPERTIES } from '../profiles'
+import { PROFILES } from '../profiles'
 
 export const noUnknownToolProperties = createApiRule({
   name: 'no-unknown-tool-properties',
@@ -20,7 +20,7 @@ export const noUnknownToolProperties = createApiRule({
     }
     for (const [name, property] of call.tool?.properties ?? []) {
       if (
-        !TOOL_PROPERTIES.includes(name) &&
+        !PROFILES[analyzer.settings.target].toolProperties.includes(name) &&
         !options.allowProperties.includes(name)
       ) {
         context.report({

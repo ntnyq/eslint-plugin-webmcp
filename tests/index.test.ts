@@ -11,13 +11,16 @@ const validTool =
 describe('public plugin and config', () => {
   it('exports versioned metadata, all implemented rules and self-referencing presets', () => {
     expect(plugin.meta?.name).toBe('eslint-plugin-webmcp')
-    expect(Object.keys(plugin.rules)).toHaveLength(24)
+    expect(Object.keys(plugin.rules)).toHaveLength(25)
     expect(plugin.configs.recommended.plugins?.['webmcp']).toBe(plugin)
     expect(plugin.configs.strict.plugins?.['webmcp']).toBe(plugin)
     expect(plugin.configs.recommended.languageOptions).toBeUndefined()
     expect(plugin.configs.recommended.rules?.['webmcp/valid-tool-name']).toBe(
       'error',
     )
+    expect(
+      plugin.configs.recommended.rules?.['webmcp/valid-output-schema'],
+    ).toBe('error')
     expect(plugin.configs.strict.rules?.['webmcp/no-unknown-api-options']).toBe(
       'warn',
     )
@@ -96,7 +99,7 @@ describe('public plugin and config', () => {
       target: 'chrome-2026-09-01',
     })
     expect(plugin.configs.recommended.settings?.['webmcp']).toStrictEqual({
-      target: 'draft-2026-10-13',
+      target: 'draft-2026-11-02',
     })
     expect(
       new Linter().verify('document.modelContext.registerTool({})', config, {

@@ -6,6 +6,8 @@ export type WebMcpTarget =
   | 'chrome-2026-09-01'
   | 'draft-2026-10-13'
   | 'chrome-2026-10-14'
+  | 'draft-2026-11-02'
+  | 'chrome-2026-11-07'
 
 export type WebMcpPreset = 'recommended' | 'strict'
 

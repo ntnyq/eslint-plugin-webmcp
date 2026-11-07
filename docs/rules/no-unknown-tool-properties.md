@@ -4,7 +4,7 @@ Catch unrecognized tool definition properties.
 
 Recommended: **—**. Strict: **warn**. No automatic fix.
 
-Known tool fields are name, title, description, inputSchema, execute and annotations. Unknown dictionary fields may be ignored by the platform. allowProperties permits application extensions.
+All targets recognize name, title, description, inputSchema, execute and annotations. The November targets additionally recognize the optional outputSchema; September and October targets still report it as unknown. Unknown dictionary fields may be ignored by the platform. allowProperties permits application extensions.
 
 ## Incorrect
 

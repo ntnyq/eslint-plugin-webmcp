@@ -10,37 +10,232 @@ const targets: {
   target: WebMcpTarget
   supportsDebugging: boolean
   requiresJsonText: boolean
+  supportsOutputSchema: boolean
+  requiresNativeTool: boolean
 }[] = [
   {
     target: 'draft-2026-09-04',
     supportsDebugging: false,
     requiresJsonText: false,
+    supportsOutputSchema: false,
+    requiresNativeTool: false,
   },
   {
     target: 'chrome-2026-09-01',
     supportsDebugging: false,
     requiresJsonText: true,
+    supportsOutputSchema: false,
+    requiresNativeTool: false,
   },
   {
     target: 'draft-2026-10-13',
     supportsDebugging: true,
     requiresJsonText: false,
+    supportsOutputSchema: false,
+    requiresNativeTool: false,
   },
   {
     target: 'chrome-2026-10-14',
     supportsDebugging: true,
     requiresJsonText: false,
+    supportsOutputSchema: false,
+    requiresNativeTool: false,
+  },
+  {
+    target: 'draft-2026-11-02',
+    supportsDebugging: true,
+    requiresJsonText: false,
+    supportsOutputSchema: true,
+    requiresNativeTool: false,
+  },
+  {
+    target: 'chrome-2026-11-07',
+    supportsDebugging: true,
+    requiresJsonText: false,
+    supportsOutputSchema: true,
+    requiresNativeTool: true,
   },
 ]
 
 const register = (annotations: string) =>
   `document.modelContext.registerTool({ annotations: ${annotations} })`
 
-for (const { target, supportsDebugging, requiresJsonText } of targets) {
+for (const {
+  target,
+  supportsDebugging,
+  requiresJsonText,
+  supportsOutputSchema,
+  requiresNativeTool,
+} of targets) {
   const tester = new RuleTester({
     languageOptions: { parser },
     settings: { webmcp: { target } },
   })
+
+  tester.run(
+    `${target}: no-unknown-tool-properties`,
+    rules['no-unknown-tool-properties'],
+    {
+      valid: [
+        'document.modelContext.registerTool({inputSchema: {}})',
+        ...(supportsOutputSchema
+          ? ['document.modelContext.registerTool({outputSchema: {}})']
+          : []),
+        {
+          code: 'document.modelContext.registerTool({outputSchema: {}})',
+          options: [{ allowProperties: ['outputSchema'] }],
+        },
+      ],
+      invalid: supportsOutputSchema
+        ? []
+        : [
+            {
+              code: 'document.modelContext.registerTool({outputSchema: {}})',
+              errors: [
+                {
+                  messageId: 'unknown',
+                  data: { name: 'outputSchema', target },
+                },
+              ],
+            },
+          ],
+    },
+  )
+
+  tester.run(`${target}: valid-output-schema`, rules['valid-output-schema'], {
+    valid: [
+      'document.modelContext.registerTool({})',
+      'document.modelContext.registerTool({outputSchema: undefined})',
+      'document.modelContext.registerTool({outputSchema: {type: "object"}})',
+      'document.modelContext.registerTool({outputSchema: unknownSchema})',
+      ...(supportsOutputSchema
+        ? []
+        : ['null', '1n', '{const: 1n}'].map(
+            schema =>
+              `document.modelContext.registerTool({outputSchema: ${schema}})`,
+          )),
+      ...(supportsOutputSchema
+        ? []
+        : [
+            {
+              code: 'document.modelContext.registerTool({outputSchema: {type: "made-up"}})',
+              options: [{ mode: 'json-schema', dialect: '2020-12' }] as const,
+            },
+          ]),
+    ],
+    invalid: supportsOutputSchema
+      ? [
+          {
+            code: 'document.modelContext.registerTool({outputSchema: null})',
+            errors: [{ messageId: 'object' }],
+          },
+          {
+            code: 'document.modelContext.registerTool({outputSchema: {const: 1n}})',
+            errors: [{ messageId: 'serialization' }],
+          },
+          {
+            code: 'document.modelContext.registerTool({outputSchema: {type: "made-up"}})',
+            options: [{ mode: 'json-schema', dialect: '2020-12' }] as const,
+            errors: [{ messageId: 'schema' }],
+          },
+        ]
+      : [],
+  })
+
+  tester.run(
+    `${target}: valid-registered-tool`,
+    rules['valid-registered-tool'],
+    {
+      valid: [
+        'document.modelContext.executeTool(tool)',
+        'const context = document.modelContext; context.executeTool(tool)',
+        'const tool = findTool(); document.modelContext.executeTool(tool)',
+        'const tools = await document.modelContext.getTools(); document.modelContext.executeTool(tools[0])',
+        'const [tool] = await document.modelContext.getTools(); document.modelContext.executeTool(tool)',
+        'document.modelContext.executeTool(await findTool())',
+        'import { tool } from "./tools"; document.modelContext.executeTool(tool)',
+        'let tool = {}; tool = findTool(); document.modelContext.executeTool(tool)',
+        'const tool = {}; consume(tool); document.modelContext.executeTool(tool)',
+        'const tool = {}; function f() { document.modelContext.executeTool(tool) }',
+        'function f(document) { document.modelContext.executeTool({}) }',
+        'function f(globalThis) { globalThis.document.modelContext.executeTool({}) }',
+        'other.executeTool({})',
+        'document.modelContext.executeTool()',
+        'document.modelContext.executeTool(...args)',
+        'const {executeTool} = document.modelContext; executeTool({})',
+        'document.modelContext.executeTool.call(document.modelContext, {})',
+        ...(requiresNativeTool
+          ? []
+          : [
+              'document.modelContext.executeTool({...tool})',
+              'document.modelContext.executeTool({__proto__: tool})',
+              'document.modelContext.executeTool({name: "search", description: "Search", window, origin})',
+            ]),
+      ],
+      invalid: [
+        ...["'search'", 'null', 'undefined', '42', 'false', '1n'].map(
+          value => ({
+            code: `document.modelContext.executeTool(${value})`,
+            errors: [
+              {
+                messageId: requiresNativeTool
+                  ? ('native' as const)
+                  : ('invalid' as const),
+              },
+            ],
+          }),
+        ),
+        ...(requiresNativeTool
+          ? [
+              '{}',
+              '{name: "search", description: "Search", window, origin}',
+              '{...tool}',
+              '{...tool, name: "search"}',
+              '{__proto__: Tool.prototype}',
+              '{get name() { return tool.name }}',
+              '{[dynamic]: value}',
+              '[]',
+              '[tool]',
+              '() => tool',
+              'function() {}',
+              'class {}',
+              '/tool/',
+            ].map(value => ({
+              code: `document.modelContext.executeTool(${value})`,
+              errors: [{ messageId: 'native' as const }],
+            }))
+          : [
+              {
+                code: 'document.modelContext.executeTool({})',
+                errors: Array.from({ length: 4 }, () => ({
+                  messageId: 'missing' as const,
+                })),
+              },
+              {
+                code: 'document.modelContext.executeTool({name: "search", description: "Search", window, origin: undefined})',
+                errors: [
+                  {
+                    messageId: 'missing' as const,
+                    data: { property: 'origin' },
+                  },
+                ],
+              },
+            ]),
+        ...(requiresNativeTool
+          ? [
+              'const tool = {...discovered}; document.modelContext.executeTool(tool)',
+              'const context = document.modelContext; context["executeTool"]({})',
+              'window.document.modelContext?.executeTool?.({} as Tool)',
+              'globalThis.document.modelContext.executeTool({} satisfies Tool)',
+              'const tool = {__proto__: Tool.prototype}; document.modelContext.executeTool(tool!)',
+            ].map(code => ({
+              code,
+              errors: [{ messageId: 'native' as const }],
+            }))
+          : []),
+      ],
+    },
+  )
 
   tester.run(`${target}: valid-annotations`, rules['valid-annotations'], {
     valid: [
@@ -203,14 +398,63 @@ for (const { target, supportsDebugging, requiresJsonText } of targets) {
 }
 
 describe('profile integration', () => {
-  it('uses the October draft for both presets and manual configurations', () => {
+  it('isolates output schemas and native Tool diagnostics across targets and presets', () => {
+    const linter = new Linter()
+    const code = `
+      document.modelContext.registerTool({name: 'inspect', description: 'Inspect state', execute() {}, outputSchema: null})
+      document.modelContext.executeTool({name: 'inspect', description: 'Inspect state', window, origin}, {})
+    `
+    for (const preset of ['recommended', 'strict'] as const) {
+      for (const {
+        target,
+        supportsOutputSchema,
+        requiresNativeTool,
+        requiresJsonText,
+      } of [...targets, ...targets.toReversed()]) {
+        const expected: { ruleId: string; messageId: string }[] = []
+        if (supportsOutputSchema) {
+          expected.push({
+            ruleId: 'webmcp/valid-output-schema',
+            messageId: 'object',
+          })
+        } else if (preset === 'strict') {
+          expected.push({
+            ruleId: 'webmcp/no-unknown-tool-properties',
+            messageId: 'unknown',
+          })
+        }
+        if (requiresNativeTool) {
+          expected.push({
+            ruleId: 'webmcp/valid-registered-tool',
+            messageId: 'native',
+          })
+        }
+        if (requiresJsonText) {
+          expected.push({
+            ruleId: 'webmcp/no-incompatible-execute-arguments',
+            messageId: 'text',
+          })
+        }
+        expect(
+          linter
+            .verify(code, createConfig({ target, preset }))
+            .map(message => ({
+              ruleId: message.ruleId,
+              messageId: message.messageId,
+            })),
+        ).toStrictEqual(expected)
+      }
+    }
+  })
+
+  it('uses the November draft for both presets and manual configurations', () => {
     for (const config of [
       plugin.configs.recommended,
       plugin.configs.strict,
       createConfig(),
     ]) {
       expect(config.settings?.['webmcp']).toStrictEqual({
-        target: 'draft-2026-10-13',
+        target: 'draft-2026-11-02',
       })
     }
     expect(
@@ -222,6 +466,14 @@ describe('profile integration', () => {
         },
       ),
     ).toStrictEqual([])
+    expect(
+      new Linter()
+        .verify('document.modelContext.registerTool({outputSchema: null})', {
+          plugins: { webmcp: plugin },
+          rules: { 'webmcp/valid-output-schema': 'error' },
+        })
+        .map(message => message.messageId),
+    ).toStrictEqual(['object'])
   })
 
   it('keeps diagnostics isolated when switching between old and new targets', () => {

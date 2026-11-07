@@ -1,8 +1,8 @@
 # Implementation scope and remaining design
 
-The design task proposed 46 candidate rules, grouped into phased implementation. This first usable release implements **24 imperative, schema, API-option and metadata rules** with fixed draft/Chrome profiles, conservative static analysis, import-bound definition wrappers, Flat Config presets, documentation and package integration checks.
+The design task proposed 46 candidate rules, grouped into phased implementation. The initial implementation covered 24 rules; with November output-schema support, the plugin now implements **25 imperative, schema, API-option and metadata rules** with fixed draft/Chrome profiles, conservative static analysis, import-bound definition wrappers, Flat Config presets, documentation and package integration checks.
 
-The remaining 22 design candidates are not exported and are not silently enabled by any preset:
+The remaining 22 original design candidates are not exported and are not silently enabled by any preset:
 
 | Area                            | Deferred rules                                                                                                                                                                                                      |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

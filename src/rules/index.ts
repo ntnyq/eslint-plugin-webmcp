@@ -6,7 +6,11 @@ import {
   validAbortSignal,
   validOriginList,
 } from './apiOptions'
-import { noUnknownModelContextEvents, validRegisteredTool } from './consumer'
+import {
+  noIncompatibleExecuteArguments,
+  noUnknownModelContextEvents,
+  validRegisteredTool,
+} from './consumer'
 import {
   noEmptyDescription,
   noUnboundApiCall,
@@ -24,9 +28,9 @@ import {
   toolNameConvention,
 } from './quality'
 import {
-  noIncompatibleExecuteArguments,
   preferParameterDescriptions,
   validInputSchema,
+  validOutputSchema,
 } from './schema'
 
 export const rules = {
@@ -37,6 +41,7 @@ export const rules = {
   'no-unsupported-api': noUnsupportedApi,
   'no-unbound-api-call': noUnboundApiCall,
   'valid-input-schema': validInputSchema,
+  'valid-output-schema': validOutputSchema,
   'no-incompatible-execute-arguments': noIncompatibleExecuteArguments,
   'prefer-parameter-descriptions': preferParameterDescriptions,
   'no-unknown-tool-properties': noUnknownToolProperties,

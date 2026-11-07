@@ -40,6 +40,8 @@ await Promise.all(
       'chrome-2026-09-01',
       'draft-2026-10-13',
       'chrome-2026-10-14',
+      'draft-2026-11-02',
+      'chrome-2026-11-07',
     ] satisfies WebMcpTarget[]
   ).map(async target => {
     const instance = new ESLint({
@@ -53,7 +55,7 @@ await Promise.all(
     )
     assert.ok(consumer)
     assert.deepEqual(consumer.messages, [])
-    if (target === 'draft-2026-10-13' || target === 'chrome-2026-10-14') {
+    if (target !== 'draft-2026-09-04' && target !== 'chrome-2026-09-01') {
       const [modern] = await instance.lintText(
         `document.modelContext.registerTool({ ...${tool}, annotations: { debugging: false } });
        document.modelContext.executeTool(tool);
@@ -64,9 +66,33 @@ await Promise.all(
       assert.ok(modern)
       assert.deepEqual(modern.messages, [])
     }
+    const supportsOutputSchema =
+      target === 'draft-2026-11-02' || target === 'chrome-2026-11-07'
+    const [schema] = await instance.lintText(
+      `document.modelContext.registerTool({ ...${tool}, outputSchema: null })`,
+      { filePath: 'example.js' },
+    )
+    assert.ok(schema)
+    assert.deepEqual(
+      schema.messages.map(message => message.ruleId),
+      [
+        supportsOutputSchema
+          ? 'webmcp/valid-output-schema'
+          : 'webmcp/no-unknown-tool-properties',
+      ],
+    )
+    const [dictionary] = await instance.lintText(
+      `document.modelContext.executeTool({name: 'search', description: 'Search products', window, origin}, ${input})`,
+      { filePath: 'example.js' },
+    )
+    assert.ok(dictionary)
+    assert.deepEqual(
+      dictionary.messages.map(message => message.messageId),
+      target === 'chrome-2026-11-07' ? ['native'] : [],
+    )
   }),
 )
-assert.equal(Object.keys(plugin.rules).length, 24)
+assert.equal(Object.keys(plugin.rules).length, 25)
 console.log(
-  'Built package: 24 rules, JS/TS Flat Config and all four targets verified.',
+  'Built package: 25 rules, JS/TS Flat Config and all six targets verified.',
 )

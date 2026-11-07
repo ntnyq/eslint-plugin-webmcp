@@ -1,7 +1,7 @@
 import type { WebMcpSettings, WebMcpTarget, WebMcpWrapper } from './types'
 
-export const DEFAULT_TARGET: WebMcpTarget = 'draft-2026-10-13'
-export const TOOL_PROPERTIES = [
+export const DEFAULT_TARGET: WebMcpTarget = 'draft-2026-11-02'
+const TOOL_PROPERTIES = [
   'name',
   'title',
   'description',
@@ -18,6 +18,8 @@ export const ANNOTATIONS = [...LEGACY_ANNOTATIONS, 'debugging']
 
 interface WebMcpProfile {
   executeInput: 'optional-object' | 'required-json-text'
+  executeToolArgument: 'registered-tool' | 'native-tool'
+  toolProperties: readonly string[]
   annotations: readonly string[]
   events: readonly string[]
 }
@@ -25,21 +27,43 @@ interface WebMcpProfile {
 export const PROFILES: Readonly<Record<WebMcpTarget, WebMcpProfile>> = {
   'draft-2026-09-04': {
     executeInput: 'optional-object',
+    executeToolArgument: 'registered-tool',
+    toolProperties: TOOL_PROPERTIES,
     annotations: LEGACY_ANNOTATIONS,
     events: ['toolchange'],
   },
   'chrome-2026-09-01': {
     executeInput: 'required-json-text',
+    executeToolArgument: 'registered-tool',
+    toolProperties: TOOL_PROPERTIES,
     annotations: LEGACY_ANNOTATIONS,
     events: ['toolchange'],
   },
   'draft-2026-10-13': {
     executeInput: 'optional-object',
+    executeToolArgument: 'registered-tool',
+    toolProperties: TOOL_PROPERTIES,
     annotations: ANNOTATIONS,
     events: ['toolchange', 'toolactivated', 'toolcancel'],
   },
   'chrome-2026-10-14': {
     executeInput: 'optional-object',
+    executeToolArgument: 'registered-tool',
+    toolProperties: TOOL_PROPERTIES,
+    annotations: ANNOTATIONS,
+    events: ['toolchange', 'toolactivated', 'toolcancel'],
+  },
+  'draft-2026-11-02': {
+    executeInput: 'optional-object',
+    executeToolArgument: 'registered-tool',
+    toolProperties: [...TOOL_PROPERTIES, 'outputSchema'],
+    annotations: ANNOTATIONS,
+    events: ['toolchange', 'toolactivated', 'toolcancel'],
+  },
+  'chrome-2026-11-07': {
+    executeInput: 'optional-object',
+    executeToolArgument: 'native-tool',
+    toolProperties: [...TOOL_PROPERTIES, 'outputSchema'],
     annotations: ANNOTATIONS,
     events: ['toolchange', 'toolactivated', 'toolcancel'],
   },
@@ -64,7 +88,9 @@ export function resolveTarget(target: unknown): WebMcpTarget {
     target === 'draft-2026-09-04' ||
     target === 'chrome-2026-09-01' ||
     target === 'draft-2026-10-13' ||
-    target === 'chrome-2026-10-14'
+    target === 'chrome-2026-10-14' ||
+    target === 'draft-2026-11-02' ||
+    target === 'chrome-2026-11-07'
   ) {
     return target
   }
