@@ -109,14 +109,20 @@ tester.run('valid-origin-list', rules['valid-origin-list'], {
     register('exposedTo: origins'),
     register('exposedTo: undefined'),
     register('exposedTo: [dynamic]'),
+    register('exposedTo: [{toString() { return "https://agent.example" }}]'),
+    'function f(undefined) { document.modelContext.getTools({fromOrigins: [undefined]}) }',
     register('exposedTo: { [Symbol.iterator]: iterator }'),
+    register('exposedTo: { __proto__: iterable }'),
+    register('exposedTo: { [dynamic]: iterator }'),
     'document.modelContext.getTools({fromOrigins: ["https://agent.example"]})',
   ],
   invalid: [
-    ...['false', 'null', '42', "'https://agent.example'"].map(origins => ({
-      code: register(`exposedTo: ${origins}`),
-      errors: [{ messageId: 'list' as const }],
-    })),
+    ...['false', 'null', '42', "'https://agent.example'", '{}'].map(
+      origins => ({
+        code: register(`exposedTo: ${origins}`),
+        errors: [{ messageId: 'list' as const }],
+      }),
+    ),
     {
       code: register("exposedTo: ['*', '/agent']"),
       errors: [{ messageId: 'url' }, { messageId: 'url' }],
@@ -124,6 +130,17 @@ tester.run('valid-origin-list', rules['valid-origin-list'], {
     {
       code: 'document.modelContext.getTools({fromOrigins: [dynamic, "bad", ...others]})',
       errors: [{ messageId: 'url' }],
+    },
+    ...['null', 'undefined', 'false', '42', '1n', 'void 0'].map(origin => ({
+      code: register(`exposedTo: [${origin}]`),
+      errors: [{ messageId: 'url' as const }],
+    })),
+    {
+      code: register('exposedTo: [, ...others, null]'),
+      errors: [
+        { messageId: 'url', data: { origin: 'undefined' } },
+        { messageId: 'url', data: { origin: 'null' } },
+      ],
     },
   ],
 })

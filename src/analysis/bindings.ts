@@ -150,11 +150,15 @@ function hasSafeReceiverReferences(
   return variable.references
     .filter(reference => reference.isRead())
     .every(reference => {
-      const { parent } = reference.identifier
-      if (
-        parent.type === 'MemberExpression' &&
-        parent.object === reference.identifier
-      ) {
+      let node: TSESTree.Node = reference.identifier
+      while (node.parent && unwrap(node.parent) === reference.identifier) {
+        node = node.parent
+      }
+      const { parent } = node
+      if (!parent) {
+        return false
+      }
+      if (parent.type === 'MemberExpression' && parent.object === node) {
         return !isWriteTarget(parent)
       }
       if (

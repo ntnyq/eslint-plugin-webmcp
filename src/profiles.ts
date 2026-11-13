@@ -135,6 +135,7 @@ export function resolveSettings(settings: unknown): Required<WebMcpSettings> {
   const wrappers = 'wrappers' in settings ? settings.wrappers : []
   if (
     !Array.isArray(wrappers) ||
+    wrappers.includes(undefined) ||
     !wrappers.every(wrapper => isWrapper(wrapper))
   ) {
     throw new Error(

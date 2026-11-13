@@ -3,5 +3,9 @@ ignoreWorkspaceRootCheck: true
 shellEmulator: true
 pmOnFail: warn
 
+overrides:
+  # GHSA-g3hv-75wg-m249: remove when upstreams require a patched minimatch.
+  'minimatch@>=7.0.0 <11.0.1': ^11.0.8
+
 allowBuilds:
   esbuild: true

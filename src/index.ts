@@ -44,7 +44,9 @@ export function createConfig(options: WebMcpConfigOptions = {}): Linter.Config {
     options.files !== undefined &&
     (!Array.isArray(options.files) ||
       options.files.length === 0 ||
-      !options.files.every(file => typeof file === 'string' && file.length > 0))
+      ![...options.files].every(
+        file => typeof file === 'string' && file.length > 0,
+      ))
   ) {
     throw new Error('webmcp: files must be a nonempty array of glob strings.')
   }

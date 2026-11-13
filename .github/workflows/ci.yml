@@ -32,6 +32,11 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node: [22.x, 24.x, 26.x]
+        eslint: [10]
+        include:
+          - os: ubuntu-latest
+            node: 22.x
+            eslint: 9
       fail-fast: false
     steps:
       - uses: actions/checkout@v7
@@ -42,6 +47,8 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+      - if: matrix.eslint == 9
+        run: pnpm add -D eslint@^9 --ignore-scripts
       - run: pnpm run build
       - run: pnpm run test
       - run: pnpm run smoke

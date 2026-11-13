@@ -56,11 +56,14 @@ describe('public plugin and config', () => {
   })
 
   it('rejects unsupported target, preset and file options from JavaScript callers', () => {
+    const sparseFiles: string[] = []
+    sparseFiles.length = 1
     const badOptions: unknown[] = [
       { target: 'latest' },
       { preset: 'all' },
       { files: [] },
       { files: [123] },
+      { files: sparseFiles },
     ]
     for (const options of badOptions) {
       expect(() => createConfig(options as WebMcpConfigOptions)).toThrow(
@@ -71,9 +74,12 @@ describe('public plugin and config', () => {
 
   it('rejects invalid manual settings even if the file contains no API calls', () => {
     const linter = new Linter()
+    const sparseWrappers: unknown[] = []
+    sparseWrappers.length = 1
     for (const settings of [
       { target: 'latest' },
       { wrappers: [{ module: '@app/webmcp' }] },
+      { wrappers: sparseWrappers },
       null,
       [],
     ]) {

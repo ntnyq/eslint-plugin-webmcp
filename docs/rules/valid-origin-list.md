@@ -4,7 +4,7 @@ Validate known origin lists and absolute URL strings.
 
 Recommended: **error**. Strict: **error**. No automatic fix.
 
-Checks exposedTo and fromOrigins. Known primitive lists except undefined are invalid. Static array members must be parseable absolute URLs; other iterable objects are left unknown. Dynamic entries do not prevent checking known siblings. Trustworthiness is not checked, so localhost and loopback HTTP origins are not rejected.
+Checks exposedTo and fromOrigins. Known primitive lists except undefined and plain object literals with no possible iterator are invalid. Static array members must be parseable absolute URLs after Web IDL string conversion, so primitive entries such as `null`, `undefined`, booleans and numbers are also reported. Array holes are read as `undefined`. Object entries and other iterable objects are left unknown because their conversion can execute user code. Dynamic entries do not prevent checking known siblings. Trustworthiness is not checked, so localhost and loopback HTTP origins are not rejected.
 
 ## Incorrect
 

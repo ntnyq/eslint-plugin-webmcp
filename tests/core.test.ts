@@ -166,6 +166,15 @@ tester.run('valid-tool-name', rules['valid-tool-name'], {
         `const context = document.modelContext; ${mutation}; context.registerTool({name: "bad name"})`,
     ),
     'const context = document.modelContext; const alias = context; ({ registerTool: alias.registerTool } = custom); context.registerTool({name: "bad name"})',
+    ...[
+      '(context!).registerTool = custom',
+      'delete (context as ModelContext).registerTool',
+      'mutate(context!)',
+      'const alias = context!; mutate(alias)',
+    ].map(
+      mutation =>
+        `const context = document.modelContext; ${mutation}; context!.registerTool({name: "bad name"})`,
+    ),
     'let context = document.modelContext; context = other; context.registerTool({name: "bad name"})',
     'const name = "bad name"; function f() { document.modelContext.registerTool({name}) }',
   ],
@@ -203,6 +212,19 @@ tester.run('valid-tool-name', rules['valid-tool-name'], {
     },
     {
       code: "const context = document.modelContext; context.getTools(); context.registerTool({name: 'bad name'})",
+      errors: [{ messageId: 'invalid' }],
+    },
+    ...[
+      'context!',
+      '(context as ModelContext)',
+      '(context satisfies ModelContext)',
+      '(<ModelContext>context)',
+    ].map(receiver => ({
+      code: `const context = document.modelContext; ${receiver}.registerTool({name: "bad name"})`,
+      errors: [{ messageId: 'invalid' as const }],
+    })),
+    {
+      code: 'const context = document.modelContext; const alias = context!; alias.registerTool({name: "bad name"})',
       errors: [{ messageId: 'invalid' }],
     },
     ...[

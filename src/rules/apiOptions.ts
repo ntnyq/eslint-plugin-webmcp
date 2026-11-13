@@ -1,7 +1,12 @@
 import type { TSESTree } from '@typescript-eslint/utils'
 import type { ApiAnalyzer, ApiCall } from '../analysis/api'
 import { getKey, isGlobal, unwrap } from '../analysis/bindings'
-import { readString, readValue, resolveExpression } from '../analysis/static'
+import {
+  readObject,
+  readString,
+  readValue,
+  resolveExpression,
+} from '../analysis/static'
 import { createApiRule, stringListOption } from '../createRule'
 import { API_METHODS, API_OPTIONS, PROFILES } from '../profiles'
 
@@ -27,12 +32,12 @@ function getOrigins(call: ApiCall): TSESTree.Node | undefined {
 function getOriginEntries(
   analyzer: ApiAnalyzer,
   node: TSESTree.Node,
-): TSESTree.Node[] {
+): (TSESTree.Expression | null)[] {
   const expression = resolveExpression(analyzer.source, node)
   return expression.type === 'ArrayExpression'
     ? expression.elements.filter(
-        (element): element is TSESTree.Expression =>
-          element !== null && element.type !== 'SpreadElement',
+        (element): element is TSESTree.Expression | null =>
+          element === null || element.type !== 'SpreadElement',
       )
     : []
 }
@@ -161,17 +166,31 @@ export const validOriginList = createApiRule({
     }
     const fact = readValue(analyzer.source, node)
     if (
-      fact.kind === 'known' &&
-      fact.value !== undefined &&
-      (fact.value === null || typeof fact.value !== 'object')
+      (fact.kind === 'known' &&
+        fact.value !== undefined &&
+        (fact.value === null || typeof fact.value !== 'object')) ||
+      readObject(analyzer.source, node)?.complete
     ) {
       context.report({ node, messageId: 'list' })
       return
     }
     for (const entry of getOriginEntries(analyzer, node)) {
-      const origin = readString(analyzer.source, entry)
-      if (origin !== undefined && !parseOrigin(origin)) {
-        context.report({ node: entry, messageId: 'url', data: { origin } })
+      const value = entry
+        ? readValue(analyzer.source, entry)
+        : { kind: 'known' as const, value: undefined }
+      if (
+        value.kind === 'known' &&
+        (typeof value.value !== 'object' || value.value === null)
+      ) {
+        // Web IDL stringifies primitives; object coercion can execute user code.
+        const origin = String(value.value)
+        if (!parseOrigin(origin)) {
+          context.report({
+            node: entry ?? node,
+            messageId: 'url',
+            data: { origin },
+          })
+        }
       }
     }
   },
@@ -193,9 +212,10 @@ export const preferCanonicalOrigin = createApiRule({
       return
     }
     for (const entry of getOriginEntries(analyzer, node)) {
-      const origin = readString(analyzer.source, entry)
+      const origin = readString(analyzer.source, entry ?? undefined)
       const url = origin === undefined ? undefined : parseOrigin(origin)
       if (
+        entry &&
         url &&
         url.origin !== 'null' &&
         (url.username ||

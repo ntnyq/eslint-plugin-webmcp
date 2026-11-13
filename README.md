@@ -43,7 +43,7 @@ export default [
 ]
 ```
 
-Install `@typescript-eslint/parser` separately. This checkout tests typescript-eslint 8.71 with the TypeScript 6 compatibility API and uses TypeScript 7 for type checking. The development aliases `typescript` → `@typescript/typescript6` and `@typescript/native` → `typescript` follow the [official side-by-side installation guidance](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0). Follow your parser's supported TypeScript range.
+Install `@typescript-eslint/parser` separately. This checkout tests typescript-eslint 8.72 with the TypeScript 6 compatibility API and uses TypeScript 7 for type checking. The development aliases `typescript` → `@typescript/typescript6` and `@typescript/native` → `typescript` follow the [official side-by-side installation guidance](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0). Follow your parser's supported TypeScript range.
 
 ## Fixed API targets
 
