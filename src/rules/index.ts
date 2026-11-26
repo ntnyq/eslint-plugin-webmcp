@@ -1,38 +1,32 @@
-import {
-  noPreabortedRegistrationSignal,
-  noUnknownApiOptions,
-  preferCanonicalOrigin,
-  requireApiArguments,
-  validAbortSignal,
-  validOriginList,
-} from './apiOptions'
-import {
-  noIncompatibleExecuteArguments,
-  noUnknownModelContextEvents,
-  validRegisteredTool,
-} from './consumer'
-import {
-  noEmptyDescription,
-  noUnboundApiCall,
-  noUnsupportedApi,
-  requireToolProperties,
-  validExecute,
-  validToolName,
-} from './core'
-import { noUnknownToolProperties, validAnnotations } from './metadata'
-import {
-  maxDescriptionLength,
-  noPlaceholderDescription,
-  preferToolTitle,
-  requireExplicitAnnotations,
-  toolNameConvention,
-} from './quality'
-import {
-  preferParameterDescriptions,
-  validInputSchema,
-  validOutputSchema,
-} from './schema'
+import { maxDescriptionLength } from './maxDescriptionLength'
+import { noEmptyDescription } from './noEmptyDescription'
+import { noIncompatibleExecuteArguments } from './noIncompatibleExecuteArguments'
+import { noPlaceholderDescription } from './noPlaceholderDescription'
+import { noPreabortedRegistrationSignal } from './noPreabortedRegistrationSignal'
+import { noUnboundApiCall } from './noUnboundApiCall'
+import { noUnknownApiOptions } from './noUnknownApiOptions'
+import { noUnknownModelContextEvents } from './noUnknownModelContextEvents'
+import { noUnknownToolProperties } from './noUnknownToolProperties'
+import { noUnsupportedApi } from './noUnsupportedApi'
+import { preferCanonicalOrigin } from './preferCanonicalOrigin'
+import { preferParameterDescriptions } from './preferParameterDescriptions'
+import { preferToolTitle } from './preferToolTitle'
+import { requireApiArguments } from './requireApiArguments'
+import { requireExplicitAnnotations } from './requireExplicitAnnotations'
+import { requireToolProperties } from './requireToolProperties'
+import { toolNameConvention } from './toolNameConvention'
+import { validAbortSignal } from './validAbortSignal'
+import { validAnnotations } from './validAnnotations'
+import { validExecute } from './validExecute'
+import { validInputSchema } from './validInputSchema'
+import { validOriginList } from './validOriginList'
+import { validOutputSchema } from './validOutputSchema'
+import { validRegisteredTool } from './validRegisteredTool'
+import { validToolName } from './validToolName'
 
+/**
+ * Registry of all plugin rules keyed by their unprefixed ESLint rule IDs.
+ */
 export const rules = {
   'require-tool-properties': requireToolProperties,
   'valid-tool-name': validToolName,

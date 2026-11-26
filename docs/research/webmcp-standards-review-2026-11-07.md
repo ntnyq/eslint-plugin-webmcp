@@ -75,8 +75,9 @@ must not be advertised as already merged into the November draft.
 Repository implications:
 
 - Add an execution-tool contract to profiles, such as dictionary versus native
-  handle. The current `valid-registered-tool` rule in `src/rules/consumer.ts:6`
-  validates required dictionary members for every target.
+  handle. At the time of this review, the
+  [`valid-registered-tool` rule](https://github.com/ntnyq/eslint-plugin-webmcp/blob/f3c4b04b66f2ae23e77f578ce4bb1b5202168420/src/rules/consumer.ts#L11)
+  validated required dictionary members for every target.
 - For a new Chromium profile, reject definitely constructed ordinary objects
   as execution handles; leave unknown identifiers unknown. Keep direct handles
   from discovery valid. Broader alias/data-flow tracking can be a later change.

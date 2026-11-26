@@ -1,11 +1,12 @@
-import type { ESLint, Linter } from 'eslint'
+import type { Linter } from 'eslint'
 import { name, version } from '../package.json'
-import { resolveTarget } from './profiles'
 import { rules } from './rules'
-import type { WebMcpConfigOptions, WebMcpPreset } from './types'
+import type { WebMcpConfigOptions, WebMcpPlugin, WebMcpPreset } from './types'
+import { createFlatConfig } from './utils'
 
 export type {
   WebMcpConfigOptions,
+  WebMcpPlugin,
   WebMcpPreset,
   WebMcpSettings,
   WebMcpTarget,
@@ -13,74 +14,38 @@ export type {
 } from './types'
 
 /**
- * Native ESLint types keep consumer configs compatible with ESLint 9 and 10.
+ * Plugin metadata and rule registry shared by the generated configs.
+ *
+ * The native ESLint type assertion bridges the typescript-eslint context types.
+ * The rules use sourceCode and are exercised against the native ESLint host.
  */
-export interface WebMcpPlugin extends ESLint.Plugin {
-  rules: NonNullable<ESLint.Plugin['rules']>
-  configs: Record<WebMcpPreset, Linter.Config>
-}
-
-// typescript-eslint still describes removed context methods and a TS-specific AST.
-// Our rules use sourceCode only. This single host boundary is exercised against
-// actual ESLint 9/10; internal rule tests retain their precise message/options types.
 const plugin = {
   meta: { name, version },
   rules: rules as unknown as WebMcpPlugin['rules'],
 }
 
 /**
- * Create a parser-independent Flat Config for a fixed WebMCP API snapshot.
+ * Create a parser-independent flat config for a fixed WebMCP API snapshot.
  *
- * @param options Target, preset and optional file globs
- * @returns A standalone Flat Config referencing this plugin
+ * @param options Target, preset and optional file globs.
+ * @returns A standalone flat config referencing this plugin.
+ * @throws {Error} If the target, preset or file globs are invalid.
  */
 export function createConfig(options: WebMcpConfigOptions = {}): Linter.Config {
-  const target = resolveTarget(options.target)
-  const preset = options.preset ?? 'recommended'
-
-  if (preset !== 'recommended' && preset !== 'strict') {
-    throw new Error('webmcp: preset must be "recommended" or "strict".')
-  }
-
-  if (
-    options.files !== undefined &&
-    (!Array.isArray(options.files) ||
-      options.files.length === 0 ||
-      ![...options.files].every(
-        file => typeof file === 'string' && file.length > 0,
-      ))
-  ) {
-    throw new Error('webmcp: files must be a nonempty array of glob strings.')
-  }
-
-  const enabled: Linter.RulesRecord = {}
-
-  for (const [ruleName, rule] of Object.entries(rules)) {
-    const severity =
-      rule.meta.docs?.recommended ??
-      (preset === 'strict' ? rule.meta.docs?.strict : undefined)
-
-    if (severity) {
-      enabled[`webmcp/${ruleName}`] = severity
-    }
-  }
-
-  return {
-    name: `webmcp/${preset}/${target}`,
-    files: options.files
-      ? [...options.files]
-      : ['**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}'],
-    plugins: { webmcp: plugin },
-    settings: { webmcp: { target } },
-    rules: enabled,
-  }
+  return createFlatConfig(options, plugin, rules)
 }
 
+/**
+ * The default recommended and strict flat configs.
+ */
 const configs: Record<WebMcpPreset, Linter.Config> = {
   recommended: createConfig(),
   strict: createConfig({ preset: 'strict' }),
 }
 
+/**
+ * Published ESLint plugin with its built-in flat configs attached.
+ */
 const webmcp: WebMcpPlugin = Object.assign(plugin, { configs })
 
 export default webmcp
