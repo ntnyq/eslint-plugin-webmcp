@@ -13,6 +13,7 @@ for (const property of ['inputSchema', 'outputSchema'] as const) {
     `document.modelContext.registerTool({${property}: ${schema}})`
   const ruleName =
     property === 'inputSchema' ? 'valid-input-schema' : 'valid-output-schema'
+
   tester.run(ruleName, rules[ruleName], {
     valid: [
       'document.modelContext.registerTool({name: "no-schema"})',

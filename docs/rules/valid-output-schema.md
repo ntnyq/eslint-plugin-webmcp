@@ -4,7 +4,7 @@ Check platform schema boundaries and optionally JSON Schema 2020-12 syntax.
 
 Recommended: **error**. Strict: **error**. No automatic fix.
 
-Checks the optional `outputSchema` on tool definitions for `draft-2026-11-02` and `chrome-2026-11-07`. Earlier targets skip this rule; `no-unknown-tool-properties` reports the unsupported field instead. Omitting the schema or explicitly setting it to `undefined` is allowed.
+Checks the optional `outputSchema` on tool definitions for all November targets. On September and October targets, `no-unknown-tool-properties` reports the unsupported field. Omitting the schema or explicitly setting it to `undefined` is allowed.
 
 This rule shares the conservative validator used by `valid-input-schema`. Platform mode rejects fully known primitives/null and BigInt serialization failures. Arrays count as objects at the platform boundary. Unknown values, dynamic subtrees, cycles, accessors and `toJSON` are skipped. Opt-in JSON Schema mode validates the JSON representation against the 2020-12 meta-schema; other declared dialects are skipped, and remote references are never fetched.
 
@@ -24,7 +24,7 @@ document.modelContext.registerTool({ outputSchema: '{}' })
 document.modelContext.registerTool({ outputSchema: { type: 'object' } })
 ```
 
-Examples use the default `draft-2026-11-02` target and focus on this rule; other enabled rules can require additional tool fields.
+Examples use the default `draft-2026-11-24` target. Other enabled rules can require additional tool fields.
 
 ## Configuration
 

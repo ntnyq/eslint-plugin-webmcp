@@ -12,6 +12,7 @@ const targets: {
   requiresJsonText: boolean
   supportsOutputSchema: boolean
   requiresNativeTool: boolean
+  supportsWaitForToolsUntil?: true
 }[] = [
   {
     target: 'draft-2026-09-04',
@@ -54,6 +55,22 @@ const targets: {
     requiresJsonText: false,
     supportsOutputSchema: true,
     requiresNativeTool: true,
+  },
+  {
+    target: 'draft-2026-11-24',
+    supportsDebugging: true,
+    requiresJsonText: false,
+    supportsOutputSchema: true,
+    requiresNativeTool: true,
+    supportsWaitForToolsUntil: true,
+  },
+  {
+    target: 'chrome-2026-11-26',
+    supportsDebugging: true,
+    requiresJsonText: false,
+    supportsOutputSchema: true,
+    requiresNativeTool: true,
+    supportsWaitForToolsUntil: true,
   },
 ]
 
@@ -224,6 +241,15 @@ for (const {
                 errors: Array.from({ length: 4 }, () => ({
                   messageId: 'missing' as const,
                 })),
+              },
+              {
+                code: 'document.modelContext.executeTool({name: "search", description: "Search", origin})',
+                errors: [
+                  {
+                    messageId: 'missing' as const,
+                    data: { property: 'window' },
+                  },
+                ],
               },
               {
                 code: 'document.modelContext.executeTool({name: "search", description: "Search", window, origin: undefined})',
@@ -418,6 +444,7 @@ describe('profile integration', () => {
       document.modelContext.registerTool({name: 'inspect', description: 'Inspect state', execute() {}, outputSchema: null})
       document.modelContext.executeTool({name: 'inspect', description: 'Inspect state', window, origin}, {})
     `
+
     for (const preset of ['recommended', 'strict'] as const) {
       for (const {
         target,
@@ -426,6 +453,7 @@ describe('profile integration', () => {
         requiresJsonText,
       } of [...targets, ...targets.toReversed()]) {
         const expected: { ruleId: string; messageId: string }[] = []
+
         if (supportsOutputSchema) {
           expected.push({
             ruleId: 'webmcp/valid-output-schema',
@@ -437,18 +465,21 @@ describe('profile integration', () => {
             messageId: 'unknown',
           })
         }
+
         if (requiresNativeTool) {
           expected.push({
             ruleId: 'webmcp/valid-registered-tool',
             messageId: 'native',
           })
         }
+
         if (requiresJsonText) {
           expected.push({
             ruleId: 'webmcp/no-incompatible-execute-arguments',
             messageId: 'text',
           })
         }
+
         expect(
           linter
             .verify(code, createConfig({ target, preset }))
@@ -461,16 +492,17 @@ describe('profile integration', () => {
     }
   })
 
-  it('uses the November draft for both presets and manual configurations', () => {
+  it('uses the November 24 draft for both presets and manual configurations', () => {
     for (const config of [
       plugin.configs.recommended,
       plugin.configs.strict,
       createConfig(),
     ]) {
       expect(config.settings?.['webmcp']).toStrictEqual({
-        target: 'draft-2026-11-02',
+        target: 'draft-2026-11-24',
       })
     }
+
     expect(
       new Linter().verify(
         'document.modelContext.addEventListener("toolactivated", refresh)',
@@ -488,7 +520,59 @@ describe('profile integration', () => {
         })
         .map(message => message.messageId),
     ).toStrictEqual(['object'])
+    expect(
+      new Linter()
+        .verify(
+          'document.modelContext.executeTool({name: "inspect", description: "Inspect state", window, origin}); document.modelContext.waitForToolsUntil()',
+          {
+            plugins: { webmcp: plugin },
+            rules: {
+              'webmcp/valid-registered-tool': 'error',
+              'webmcp/require-api-arguments': 'error',
+            },
+          },
+        )
+        .map(message => message.messageId),
+    ).toStrictEqual(['native', 'promise'])
   })
+
+  it.each(targets)(
+    'scopes tool readiness checks to $target',
+    ({ target, supportsWaitForToolsUntil }) => {
+      const code = `
+        const context = document.modelContext
+        context["waitForToolsUntil"]()
+        const { waitForToolsUntil } = context
+        waitForToolsUntil(pending)
+        navigator.modelContext.waitForToolsUntil(pending)
+        context.waitForToolsUntil(pending)
+        context.waitForToolsUntil({ then: resolve => resolve() })
+        context.waitForToolsUntil(undefined)
+        context.waitForToolsUntil(...args)
+        document.modelContext.waitForToolsUntil.call(document.modelContext, pending)
+        document.modelContext.waitForToolsUntil.bind(document.modelContext)(pending)
+        const escaped = document.modelContext
+        use(escaped)
+        escaped.waitForToolsUntil()
+        function useOther(document) { document.modelContext.waitForToolsUntil() }
+        other.waitForToolsUntil()
+      `
+
+      expect(
+        new Linter()
+          .verify(code, createConfig({ target, preset: 'strict' }))
+          .map(({ ruleId, messageId }) => [ruleId, messageId]),
+      ).toStrictEqual(
+        supportsWaitForToolsUntil
+          ? [
+              ['webmcp/require-api-arguments', 'promise'],
+              ['webmcp/no-unbound-api-call', 'unbound'],
+              ['webmcp/no-unsupported-api', 'legacy'],
+            ]
+          : [],
+      )
+    },
+  )
 
   it('keeps diagnostics isolated when switching between old and new targets', () => {
     const linter = new Linter()
@@ -497,6 +581,7 @@ describe('profile integration', () => {
       document.modelContext.addEventListener('toolactivated', refresh)
       document.modelContext.executeTool(tool, {})
     `
+
     for (const { target, supportsDebugging, requiresJsonText } of [
       ...targets,
       ...targets.toReversed(),

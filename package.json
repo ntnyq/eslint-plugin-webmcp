@@ -56,26 +56,27 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@typescript-eslint/utils": "^8.72.1",
+    "@typescript-eslint/utils": "^8.74.0",
     "ajv": "^8.20.0"
   },
   "devDependencies": {
     "@ntnyq/tsconfig": "^3.1.0",
-    "@types/node": "^26.6.6",
-    "@typescript-eslint/parser": "^8.72.1",
-    "@typescript-eslint/rule-tester": "^8.72.1",
+    "@types/node": "^26.6.11",
+    "@typescript-eslint/parser": "^8.74.0",
+    "@typescript-eslint/rule-tester": "^8.74.0",
     "@typescript/native": "npm:typescript@~7.0.2",
     "bumpp": "^12.3.0",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
+    "eslint-plugin-ntnyq": "^0.21.0",
     "husky": "^9.1.7",
     "nano-staged": "^1.0.2",
-    "npm-run-all2": "^9.0.4",
-    "oxfmt": "^0.77.0",
-    "oxlint": "^1.92.0",
+    "npm-run-all2": "^9.1.0",
+    "oxfmt": "^0.80.0",
+    "oxlint": "^1.95.0",
     "tsdown": "^0.23.7",
     "tsx": "^4.23.15",
     "typescript": "npm:@typescript/typescript6@~6.0.2",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.2"
   },
   "peerDependencies": {
     "eslint": "^9.0.0 || ^10.0.0"
@@ -87,5 +88,5 @@
   "engines": {
     "node": "^22.13.0 || >=24.0.0"
   },
-  "packageManager": "pnpm@12.18.0"
+  "packageManager": "pnpm@12.23.0"
 }

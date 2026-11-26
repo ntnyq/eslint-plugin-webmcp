@@ -52,7 +52,7 @@ import { createConfig } from 'eslint-plugin-webmcp'
 
 export default [
   createConfig({
-    target: 'chrome-2026-11-07',
+    target: 'chrome-2026-11-26',
     preset: 'strict',
     files: ['src/**/*.{js,ts,tsx}'],
   }),
@@ -61,20 +61,22 @@ export default [
 
 All targets use `document.modelContext`.
 
-| Target                       | `executeTool` first argument | `executeTool` input | `outputSchema` |
-| ---------------------------- | ---------------------------- | ------------------- | -------------- |
-| `draft-2026-11-02` (default) | `RegisteredTool` dictionary  | Optional object     | Supported      |
-| `chrome-2026-11-07`          | Native `Tool` handle         | Optional object     | Supported      |
-| `draft-2026-10-13`           | `RegisteredTool` dictionary  | Optional object     | Unsupported    |
-| `chrome-2026-10-14`          | `RegisteredTool` dictionary  | Optional object     | Unsupported    |
-| `draft-2026-09-04`           | `RegisteredTool` dictionary  | Optional object     | Unsupported    |
-| `chrome-2026-09-01`          | `RegisteredTool` dictionary  | Required JSON text  | Unsupported    |
+| Target                       | `executeTool` first argument | `executeTool` input | `outputSchema` | `waitForToolsUntil` checks |
+| ---------------------------- | ---------------------------- | ------------------- | -------------- | -------------------------- |
+| `draft-2026-11-24` (default) | Native `Tool` handle         | Optional object     | Supported      | Yes                        |
+| `chrome-2026-11-26`          | Native `Tool` handle         | Optional object     | Supported      | Yes                        |
+| `draft-2026-11-02`           | `RegisteredTool` dictionary  | Optional object     | Supported      | —                          |
+| `chrome-2026-11-07`          | Native `Tool` handle         | Optional object     | Supported      | —                          |
+| `draft-2026-10-13`           | `RegisteredTool` dictionary  | Optional object     | Unsupported    | —                          |
+| `chrome-2026-10-14`          | `RegisteredTool` dictionary  | Optional object     | Unsupported    | —                          |
+| `draft-2026-09-04`           | `RegisteredTool` dictionary  | Optional object     | Unsupported    | —                          |
+| `chrome-2026-09-01`          | `RegisteredTool` dictionary  | Required JSON text  | Unsupported    | —                          |
 
 All snapshots use Promise-based registration, `options.signal` for unregistration and the `toolchange` event. The October and November targets also support `annotations.debugging`, `toolactivated` and `toolcancel`. Optional object input defaults to `{}`. Chrome profiles are backed by fixed Chromium development commits; they do not claim that every Chrome release implements those snapshots. See [sources and snapshot details](docs/targets.md).
 
 Manual configurations can set `settings: { webmcp: { target: 'draft-2026-11-02' } }`. Unknown targets, presets, invalid file lists and malformed wrapper settings produce configuration errors. There is no floating `latest` or partially supported legacy target.
 
-The default is now `draft-2026-11-02`, including both presets and rules without explicit settings. Pin `draft-2026-10-13` to retain the previous default diagnostics. All four explicit September/October targets retain their original API contracts, including treating `outputSchema` as unsupported. For `chrome-2026-11-07`, pass the original `Tool` returned by `getTools()`; object copies and hand-written dictionaries lack its native identity. See the [November migration notes](docs/targets.md#migrating-to-the-november-targets).
+Both presets and rules without explicit target settings use `draft-2026-11-24`. Pin `draft-2026-11-02` to keep the previous default diagnostics. For targets that require a native `Tool`, pass the original handle returned by `getTools()` to `executeTool()`. See the [late November migration notes](docs/targets.md#migrating-to-the-late-november-targets).
 
 ## Rules and presets
 

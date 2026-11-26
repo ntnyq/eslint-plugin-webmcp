@@ -21,14 +21,17 @@ describe.each([
       const correct = /## Correct\s+```js\r?\n(?<code>[\s\S]*?)```/u.exec(
         documentation,
       )?.groups?.['code']
+
       if (!incorrect || !correct) {
         throw new Error(`Missing documentation examples for ${name}`)
       }
+
       const linter = new Linter()
       const config = {
         plugins: { webmcp: plugin },
         rules: { [`webmcp/${name}`]: 'error' as const },
       }
+
       expect(
         linter
           .verify(incorrect, config)

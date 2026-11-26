@@ -44,6 +44,7 @@ describe('public plugin and config', () => {
       ],
       { filename: 'example.ts' },
     )
+
     expect(messages).toStrictEqual([])
   })
 
@@ -52,11 +53,13 @@ describe('public plugin and config', () => {
       'const server = {registerTool(){}}; server.registerTool({}); function f(document) { document.modelContext.registerTool({}) }',
       plugin.configs.strict,
     )
+
     expect(messages).toStrictEqual([])
   })
 
   it('rejects unsupported target, preset and file options from JavaScript callers', () => {
     const sparseFiles: string[] = []
+
     sparseFiles.length = 1
     const badOptions: unknown[] = [
       { target: 'latest' },
@@ -65,6 +68,7 @@ describe('public plugin and config', () => {
       { files: [123] },
       { files: sparseFiles },
     ]
+
     for (const options of badOptions) {
       expect(() => createConfig(options as WebMcpConfigOptions)).toThrow(
         'webmcp:',
@@ -75,7 +79,9 @@ describe('public plugin and config', () => {
   it('rejects invalid manual settings even if the file contains no API calls', () => {
     const linter = new Linter()
     const sparseWrappers: unknown[] = []
+
     sparseWrappers.length = 1
+
     for (const settings of [
       { target: 'latest' },
       { wrappers: [{ module: '@app/webmcp' }] },
@@ -99,13 +105,14 @@ describe('public plugin and config', () => {
       preset: 'strict',
       files,
     })
+
     files.push('other/**/*.js')
     expect(config.files).toStrictEqual(['src/**/*.js'])
     expect(config.settings?.['webmcp']).toStrictEqual({
       target: 'chrome-2026-09-01',
     })
     expect(plugin.configs.recommended.settings?.['webmcp']).toStrictEqual({
-      target: 'draft-2026-11-02',
+      target: 'draft-2026-11-24',
     })
     expect(
       new Linter().verify('document.modelContext.registerTool({})', config, {
@@ -117,6 +124,7 @@ describe('public plugin and config', () => {
   it('does not share analysis across target settings on repeated lint runs', () => {
     const linter = new Linter()
     const code = 'document.modelContext.executeTool(tool, "{}")'
+
     expect(linter.verify(code, createConfig())[0]?.ruleId).toBe(
       'webmcp/no-incompatible-execute-arguments',
     )
@@ -151,6 +159,7 @@ describe('public plugin and config', () => {
       'import {defineTool as define} from "@app/webmcp"; define("meta", {})',
       config,
     )
+
     expect(messages.map(message => message.ruleId)).toStrictEqual(
       Array.from({ length: 3 }, () => 'webmcp/require-tool-properties'),
     )
@@ -191,7 +200,7 @@ describe('public plugin and config', () => {
         })
       `,
       [
-        plugin.configs.strict,
+        createConfig({ target: 'draft-2026-11-02', preset: 'strict' }),
         {
           rules: {
             'webmcp/valid-input-schema': [
@@ -206,6 +215,7 @@ describe('public plugin and config', () => {
         },
       ],
     )
+
     expect(messages.map(message => message.messageId)).toStrictEqual([
       ...Array.from({ length: 7 }, () => 'missing'),
       'schema',

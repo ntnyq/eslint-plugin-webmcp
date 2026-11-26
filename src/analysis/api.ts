@@ -1,6 +1,6 @@
 import type { TSESLint, TSESTree } from '@typescript-eslint/utils'
-import { API_METHODS, LEGACY_METHODS, resolveSettings } from '../profiles'
-import type { WebMcpSettings } from '../types'
+import { LEGACY_METHODS, resolveSettings, supportsApiMethod } from '../profiles'
+import type { WebMcpSettings, WebMcpTarget } from '../types'
 import {
   getConstInitializer,
   getKey,
@@ -41,26 +41,33 @@ export class ApiAnalyzer {
     if (depth > 20) {
       return undefined
     }
+
     const expression = unwrap(node)
+
     if (expression.type === 'Identifier') {
       const initializer = getConstInitializer(
         this.source,
         expression,
         'receiver',
       )
+
       return initializer ? this.getReceiver(initializer, depth + 1) : undefined
     }
+
     if (
       expression.type !== 'MemberExpression' ||
       getKey(expression) !== 'modelContext'
     ) {
       return undefined
     }
+
     const owner = unwrap(expression.object)
+
     for (const name of ['document', 'navigator'] as const) {
       if (isGlobal(this.source, owner, name)) {
         return name
       }
+
       if (
         owner.type === 'MemberExpression' &&
         getKey(owner) === name &&
@@ -70,6 +77,7 @@ export class ApiAnalyzer {
         return name
       }
     }
+
     return undefined
   }
 
@@ -80,26 +88,37 @@ export class ApiAnalyzer {
     if (depth > 20) {
       return undefined
     }
+
     const expression = unwrap(node)
+
     if (expression.type === 'MemberExpression') {
       const receiver = this.getReceiver(expression.object)
       const method = getKey(expression)
+
       return receiver && method ? { receiver, method, bound: true } : undefined
     }
+
     if (expression.type === 'SequenceExpression') {
       const last = expression.expressions.at(-1)
       const method = last ? this.getMethod(last, depth + 1) : undefined
+
       return method ? { ...method, bound: false } : undefined
     }
+
     if (expression.type !== 'Identifier') {
       return undefined
     }
+
     const initializer = getConstInitializer(this.source, expression, 'method')
+
     if (initializer) {
       const method = this.getMethod(initializer, depth + 1)
+
       return method ? { ...method, bound: false } : undefined
     }
+
     const variable = getVariable(this.source, expression)
+
     if (
       variable?.defs.length !== 1 ||
       variable.references.some(
@@ -108,7 +127,9 @@ export class ApiAnalyzer {
     ) {
       return undefined
     }
+
     const [definition] = variable.defs
+
     if (
       definition?.type !== 'Variable' ||
       definition.parent.kind !== 'const' ||
@@ -118,10 +139,13 @@ export class ApiAnalyzer {
     ) {
       return undefined
     }
+
     const receiver = this.getReceiver(definition.node.init)
+
     if (!receiver) {
       return undefined
     }
+
     for (const property of definition.node.id.properties) {
       if (
         property.type === 'Property' &&
@@ -129,19 +153,24 @@ export class ApiAnalyzer {
         property.value.name === expression.name
       ) {
         const method = getKey(property)
+
         return method ? { receiver, method, bound: false } : undefined
       }
     }
+
     return undefined
   }
 
   private getWrapper(node: TSESTree.CallExpression): number | undefined {
     const callee = unwrap(node.callee)
+
     if (callee.type !== 'Identifier') {
       return undefined
     }
+
     const variable = getVariable(this.source, callee)
     const definition = variable?.defs[0]
+
     if (
       definition?.type !== 'ImportBinding' ||
       definition.node.type !== 'ImportSpecifier' ||
@@ -151,11 +180,13 @@ export class ApiAnalyzer {
     ) {
       return undefined
     }
+
     const imported =
       definition.node.imported.type === 'Identifier'
         ? definition.node.imported.name
         : definition.node.imported.value
     const moduleName = definition.parent.source.value
+
     return this.settings.wrappers.find(
       wrapper => wrapper.module === moduleName && wrapper.imported === imported,
     )?.toolArgument
@@ -163,15 +194,20 @@ export class ApiAnalyzer {
 
   public identify(node: TSESTree.CallExpression): ApiCall | undefined {
     const cached = this.calls.get(node)
+
     if (cached !== undefined) {
       return cached ?? undefined
     }
+
     const method = this.getMethod(node.callee)
     const wrapperIndex = method ? undefined : this.getWrapper(node)
+
     if (!method && wrapperIndex === undefined) {
       this.calls.set(node, null)
+
       return undefined
     }
+
     const descriptor = method ?? {
       method: 'definition',
       receiver: 'wrapper' as const,
@@ -207,7 +243,9 @@ export class ApiAnalyzer {
           ? readObject(this.source, argument(optionIndex))
           : undefined,
     }
+
     this.calls.set(node, result)
+
     return result
   }
 }
@@ -221,15 +259,19 @@ export function getAnalyzer(
   const resolved = resolveSettings(settings)
   const key = JSON.stringify(resolved)
   let analyzers = ANALYZERS.get(source)
+
   if (!analyzers) {
     analyzers = new Map()
     ANALYZERS.set(source, analyzers)
   }
+
   let analyzer = analyzers.get(key)
+
   if (!analyzer) {
     analyzer = new ApiAnalyzer(source, resolved)
     analyzers.set(key, analyzer)
   }
+
   return analyzer
 }
 
@@ -241,9 +283,18 @@ export function isDefinition(call: ApiCall): boolean {
   )
 }
 
-export function isNativeMethod(call: ApiCall): boolean {
+export function isCurrentCall(call: ApiCall, target: WebMcpTarget): boolean {
+  return (
+    call.receiver === 'document' &&
+    call.bound &&
+    supportsApiMethod(target, call.method)
+  )
+}
+
+export function isNativeMethod(call: ApiCall, target: WebMcpTarget): boolean {
   return (
     call.receiver !== 'wrapper' &&
-    (API_METHODS.includes(call.method) || LEGACY_METHODS.includes(call.method))
+    (supportsApiMethod(target, call.method) ||
+      LEGACY_METHODS.includes(call.method))
   )
 }

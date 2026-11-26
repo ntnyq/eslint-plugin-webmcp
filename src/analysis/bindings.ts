@@ -22,22 +22,27 @@ export function getKey(
   node: TSESTree.MemberExpression | TSESTree.Property,
 ): string | undefined {
   const key = node.type === 'MemberExpression' ? node.property : node.key
+
   if (!node.computed && key.type === 'Identifier') {
     return key.name
   }
+
   const unwrapped = unwrap(key)
+
   if (
     unwrapped.type === 'Literal' &&
     (typeof unwrapped.value === 'string' || typeof unwrapped.value === 'number')
   ) {
     return String(unwrapped.value)
   }
+
   if (
     unwrapped.type === 'TemplateLiteral' &&
     unwrapped.expressions.length === 0
   ) {
     return unwrapped.quasis[0]?.value.cooked ?? undefined
   }
+
   return undefined
 }
 
@@ -46,13 +51,17 @@ export function getVariable(
   node: TSESTree.Identifier,
 ): TSESLint.Scope.Variable | undefined {
   let scope: TSESLint.Scope.Scope | null = source.getScope(node)
+
   while (scope) {
     const variable = scope.set.get(node.name)
+
     if (variable) {
       return variable
     }
+
     scope = scope.upper
   }
+
   return undefined
 }
 
@@ -62,17 +71,22 @@ export function isGlobal(
   name: string,
 ): boolean {
   const expression = unwrap(node)
+
   if (expression.type !== 'Identifier' || expression.name !== name) {
     return false
   }
+
   const variable = getVariable(source, expression)
+
   return !variable || variable.defs.length === 0
 }
 
 function getExecutionOwner(node: TSESTree.Node): TSESTree.Node {
   let current = node
+
   while (current.parent) {
     current = current.parent
+
     if (
       current.type === 'Program' ||
       current.type === 'FunctionDeclaration' ||
@@ -82,13 +96,16 @@ function getExecutionOwner(node: TSESTree.Node): TSESTree.Node {
       return current
     }
   }
+
   return current
 }
 
 function isWriteTarget(node: TSESTree.MemberExpression): boolean {
   let current: TSESTree.Node = node
+
   while (current.parent) {
     const { parent }: TSESTree.Node = current
+
     switch (parent.type) {
       case 'AssignmentExpression':
       case 'ForInStatement':
@@ -108,12 +125,14 @@ function isWriteTarget(node: TSESTree.MemberExpression): boolean {
         ) {
           return false
         }
+
         break
       }
       case 'AssignmentPattern': {
         if (parent.left !== current) {
           return false
         }
+
         break
       }
       case 'RestElement':
@@ -127,8 +146,10 @@ function isWriteTarget(node: TSESTree.MemberExpression): boolean {
         }
       }
     }
+
     current = parent
   }
+
   return false
 }
 
@@ -146,21 +167,28 @@ function hasSafeReceiverReferences(
   ) {
     return false
   }
+
   seen.add(variable)
+
   return variable.references
     .filter(reference => reference.isRead())
     .every(reference => {
       let node: TSESTree.Node = reference.identifier
+
       while (node.parent && unwrap(node.parent) === reference.identifier) {
         node = node.parent
       }
+
       const { parent } = node
+
       if (!parent) {
         return false
       }
+
       if (parent.type === 'MemberExpression' && parent.object === node) {
         return !isWriteTarget(parent)
       }
+
       if (
         parent.type === 'VariableDeclarator' &&
         parent.parent.type === 'VariableDeclaration' &&
@@ -169,14 +197,17 @@ function hasSafeReceiverReferences(
         if (parent.id.type === 'ObjectPattern') {
           return true
         }
+
         if (parent.id.type === 'Identifier') {
           const alias = getVariable(source, parent.id)
+
           return (
             alias !== undefined &&
             hasSafeReceiverReferences(source, alias, seen)
           )
         }
       }
+
       return false
     })
 }
@@ -196,6 +227,7 @@ export function getConstInitializer(
   mode: 'value' | 'receiver' | 'method' = 'value',
 ): TSESTree.Node | undefined {
   const variable = getVariable(source, node)
+
   if (
     !variable ||
     variable.defs.length !== 1 ||
@@ -205,7 +237,9 @@ export function getConstInitializer(
   ) {
     return undefined
   }
+
   const [definition] = variable.defs
+
   if (
     definition?.type !== 'Variable' ||
     definition.parent.kind !== 'const' ||
@@ -214,6 +248,7 @@ export function getConstInitializer(
   ) {
     return undefined
   }
+
   if (
     definition.parent.parent.type === 'ExportNamedDeclaration' ||
     definition.node.range[1] > node.range[0] ||
@@ -221,8 +256,10 @@ export function getConstInitializer(
   ) {
     return undefined
   }
+
   const initializer = unwrap(definition.node.init)
   const reads = variable.references.filter(reference => reference.isRead())
+
   if (mode === 'receiver') {
     if (!hasSafeReceiverReferences(source, variable)) {
       return undefined
@@ -236,5 +273,6 @@ export function getConstInitializer(
   ) {
     return undefined
   }
+
   return initializer
 }

@@ -27,24 +27,30 @@ export const requireToolProperties = createApiRule({
     if (!isDefinition(call) || !call.toolNode) {
       return
     }
+
     const fact = readValue(analyzer.source, call.toolNode)
+
     if (
       fact.kind === 'known' &&
       (fact.value === null || typeof fact.value !== 'object')
     ) {
       context.report({ node: call.toolNode, messageId: 'invalid' })
+
       return
     }
+
     // Array elements cannot supply named dictionary members.
     const isArray =
       resolveExpression(analyzer.source, call.toolNode).type ===
       'ArrayExpression'
+
     for (const property of ['name', 'description', 'execute']) {
       const field = getField(call.tool, property)
       const value =
         field.kind === 'known'
           ? readValue(analyzer.source, field.node)
           : undefined
+
       if (
         isArray ||
         field.kind === 'missing' ||
@@ -73,8 +79,10 @@ export const validToolName = createApiRule({
     if (!isDefinition(call)) {
       return
     }
+
     const node = call.tool?.properties.get('name')?.value
     const name = readString(analyzer.source, node)
+
     if (node && name !== undefined && !isValidToolName(name)) {
       context.report({ node, messageId: 'invalid' })
     }
@@ -95,6 +103,7 @@ export const validExecute = createApiRule({
       ? call.tool?.properties.get('execute')?.value
       : undefined
     const value = readValue(analyzer.source, node)
+
     if (
       node &&
       !(value.kind === 'known' && value.value === undefined) &&
@@ -120,6 +129,7 @@ export const noEmptyDescription = createApiRule({
       ? call.tool?.properties.get('description')?.value
       : undefined
     const description = readString(analyzer.source, node)
+
     if (node && description !== undefined && description.trim().length === 0) {
       context.report({ node, messageId: 'empty' })
     }
@@ -138,9 +148,10 @@ export const noUnsupportedApi = createApiRule({
       '{{method}} is not supported by {{target}}. Registration lifetime is controlled by options.signal.',
   },
   check(call, analyzer, context) {
-    if (!isNativeMethod(call)) {
+    if (!isNativeMethod(call, analyzer.settings.target)) {
       return
     }
+
     if (call.receiver === 'navigator') {
       context.report({
         node: call.node.callee,
@@ -167,8 +178,8 @@ export const noUnboundApiCall = createApiRule({
     unbound:
       'Call {{method}} on its ModelContext receiver, or explicitly bind the method to that receiver.',
   },
-  check(call, _analyzer, context) {
-    if (isNativeMethod(call) && !call.bound) {
+  check(call, analyzer, context) {
+    if (isNativeMethod(call, analyzer.settings.target) && !call.bound) {
       context.report({
         node: call.node.callee,
         messageId: 'unbound',

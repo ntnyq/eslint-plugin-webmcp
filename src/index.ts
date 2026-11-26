@@ -37,9 +37,11 @@ const plugin = {
 export function createConfig(options: WebMcpConfigOptions = {}): Linter.Config {
   const target = resolveTarget(options.target)
   const preset = options.preset ?? 'recommended'
+
   if (preset !== 'recommended' && preset !== 'strict') {
     throw new Error('webmcp: preset must be "recommended" or "strict".')
   }
+
   if (
     options.files !== undefined &&
     (!Array.isArray(options.files) ||
@@ -50,15 +52,19 @@ export function createConfig(options: WebMcpConfigOptions = {}): Linter.Config {
   ) {
     throw new Error('webmcp: files must be a nonempty array of glob strings.')
   }
+
   const enabled: Linter.RulesRecord = {}
+
   for (const [ruleName, rule] of Object.entries(rules)) {
     const severity =
       rule.meta.docs?.recommended ??
       (preset === 'strict' ? rule.meta.docs?.strict : undefined)
+
     if (severity) {
       enabled[`webmcp/${ruleName}`] = severity
     }
   }
+
   return {
     name: `webmcp/${preset}/${target}`,
     files: options.files

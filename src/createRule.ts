@@ -53,9 +53,11 @@ export function createApiRule<
         context.sourceCode,
         context.settings['webmcp'],
       )
+
       return {
         CallExpression(node) {
           const call = analyzer.identify(node)
+
           if (call) {
             definition.check(call, analyzer, context, options)
           }

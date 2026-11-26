@@ -5,6 +5,7 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "oxc.oxc-vscode",
   "editor.codeActionsOnSave": {
+    "source.format.oxc": "explicit",
     "source.fixAll.oxc": "explicit"
   },
   "js/ts.experimental.useTsgo": true,

@@ -1,4 +1,5 @@
 import type { TSESTree } from '@typescript-eslint/utils'
+import { isCurrentCall } from '../analysis/api'
 import type { ApiAnalyzer, ApiCall } from '../analysis/api'
 import { getKey, isGlobal, unwrap } from '../analysis/bindings'
 import {
@@ -8,24 +9,22 @@ import {
   resolveExpression,
 } from '../analysis/static'
 import { createApiRule, stringListOption } from '../createRule'
-import { API_METHODS, API_OPTIONS, PROFILES } from '../profiles'
+import { API_OPTIONS, PROFILES } from '../profiles'
 
-export function isCurrentCall(call: ApiCall): boolean {
-  return (
-    call.receiver === 'document' &&
-    call.bound &&
-    API_METHODS.includes(call.method)
-  )
-}
-
-function getOrigins(call: ApiCall): TSESTree.Node | undefined {
-  if (!isCurrentCall(call)) {
+function getOrigins(
+  call: ApiCall,
+  analyzer: ApiAnalyzer,
+): TSESTree.Node | undefined {
+  if (!isCurrentCall(call, analyzer.settings.target)) {
     return undefined
   }
+
   const originOption = { registerTool: 'exposedTo', getTools: 'fromOrigins' }
+
   if (call.method !== 'registerTool' && call.method !== 'getTools') {
     return undefined
   }
+
   return call.options?.properties.get(originOption[call.method])?.value
 }
 
@@ -34,6 +33,7 @@ function getOriginEntries(
   node: TSESTree.Node,
 ): (TSESTree.Expression | null)[] {
   const expression = resolveExpression(analyzer.source, node)
+
   return expression.type === 'ArrayExpression'
     ? expression.elements.filter(
         (element): element is TSESTree.Expression | null =>
@@ -57,31 +57,32 @@ export const requireApiArguments = createApiRule({
   defaultOptions: [],
   messages: {
     missing: '{{method}} requires a tool argument.',
+    promise: 'waitForToolsUntil requires a promise argument.',
     input: '{{target}} requires a JSON text input argument for executeTool.',
   },
   check(call, analyzer, context) {
-    if (
-      isCurrentCall(call) &&
-      call.method !== 'getTools' &&
-      call.node.arguments.length === 0
-    ) {
+    const { target } = analyzer.settings
+
+    if (!isCurrentCall(call, target)) {
+      return
+    }
+
+    if (call.method !== 'getTools' && call.node.arguments.length === 0) {
       context.report({
         node: call.node,
-        messageId: 'missing',
+        messageId: call.method === 'waitForToolsUntil' ? 'promise' : 'missing',
         data: { method: call.method },
       })
     } else if (
-      isCurrentCall(call) &&
       call.method === 'executeTool' &&
-      PROFILES[analyzer.settings.target].executeInput ===
-        'required-json-text' &&
+      PROFILES[target].executeInput === 'required-json-text' &&
       call.node.arguments.length === 1 &&
       call.node.arguments[0]?.type !== 'SpreadElement'
     ) {
       context.report({
         node: call.node,
         messageId: 'input',
-        data: { target: analyzer.settings.target },
+        data: { target },
       })
     }
   },
@@ -99,9 +100,10 @@ export const noUnknownApiOptions = createApiRule({
       'Option "{{name}}" is not declared for {{method}} in {{target}} and may be ignored.',
   },
   check(call, analyzer, context, [options]) {
-    if (!isCurrentCall(call)) {
+    if (!isCurrentCall(call, analyzer.settings.target)) {
       return
     }
+
     for (const [name, property] of call.options?.properties ?? []) {
       if (
         !API_OPTIONS[call.method]?.includes(name) &&
@@ -128,14 +130,18 @@ export const validAbortSignal = createApiRule({
   },
   check(call, analyzer, context) {
     const node =
-      isCurrentCall(call) && call.method !== 'getTools'
+      isCurrentCall(call, analyzer.settings.target) &&
+      call.method !== 'getTools'
         ? call.options?.properties.get('signal')?.value
         : undefined
+
     if (!node) {
       return
     }
+
     const expression = resolveExpression(analyzer.source, node)
     const fact = readValue(analyzer.source, expression)
+
     if (
       (fact.kind === 'known' && fact.value !== undefined) ||
       expression.type === 'ObjectExpression' ||
@@ -160,11 +166,14 @@ export const validOriginList = createApiRule({
     url: '"{{origin}}" cannot be parsed as an absolute origin URL.',
   },
   check(call, analyzer, context) {
-    const node = getOrigins(call)
+    const node = getOrigins(call, analyzer)
+
     if (!node) {
       return
     }
+
     const fact = readValue(analyzer.source, node)
+
     if (
       (fact.kind === 'known' &&
         fact.value !== undefined &&
@@ -172,18 +181,22 @@ export const validOriginList = createApiRule({
       readObject(analyzer.source, node)?.complete
     ) {
       context.report({ node, messageId: 'list' })
+
       return
     }
+
     for (const entry of getOriginEntries(analyzer, node)) {
       const value = entry
         ? readValue(analyzer.source, entry)
         : { kind: 'known' as const, value: undefined }
+
       if (
         value.kind === 'known' &&
         (typeof value.value !== 'object' || value.value === null)
       ) {
         // Web IDL stringifies primitives; object coercion can execute user code.
         const origin = String(value.value)
+
         if (!parseOrigin(origin)) {
           context.report({
             node: entry ?? node,
@@ -207,13 +220,16 @@ export const preferCanonicalOrigin = createApiRule({
       'This option matches the entire origin; credentials, paths, queries and fragments do not narrow its scope.',
   },
   check(call, analyzer, context) {
-    const node = getOrigins(call)
+    const node = getOrigins(call, analyzer)
+
     if (!node) {
       return
     }
+
     for (const entry of getOriginEntries(analyzer, node)) {
       const origin = readString(analyzer.source, entry ?? undefined)
       const url = origin === undefined ? undefined : parseOrigin(origin)
+
       if (
         entry &&
         url &&
@@ -242,17 +258,23 @@ export const noPreabortedRegistrationSignal = createApiRule({
   },
   check(call, analyzer, context) {
     const node =
-      isCurrentCall(call) && call.method === 'registerTool'
+      isCurrentCall(call, analyzer.settings.target) &&
+      call.method === 'registerTool'
         ? call.options?.properties.get('signal')?.value
         : undefined
+
     if (!node) {
       return
     }
+
     const expression = resolveExpression(analyzer.source, node)
+
     if (expression.type !== 'CallExpression') {
       return
     }
+
     const callee = unwrap(expression.callee)
+
     if (
       callee.type === 'MemberExpression' &&
       getKey(callee) === 'abort' &&

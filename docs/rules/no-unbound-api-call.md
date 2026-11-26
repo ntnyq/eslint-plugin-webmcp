@@ -6,17 +6,19 @@ Recommended: **error**. Strict: **error**. No automatic fix.
 
 Identifies extracted native methods, including destructuring and sequence expressions. Explicit bind/call/apply forms are skipped; they do not trigger unbound diagnostics.
 
+The rule checks `waitForToolsUntil()` for `draft-2026-11-24` and `chrome-2026-11-26`.
+
 ## Incorrect
 
 ```js
-const { registerTool } = document.modelContext
-registerTool(tool)
+const { waitForToolsUntil } = document.modelContext
+waitForToolsUntil(pendingRegistration)
 ```
 
 ## Correct
 
 ```js
-document.modelContext.registerTool(tool)
+document.modelContext.waitForToolsUntil(pendingRegistration)
 ```
 
 Examples focus on this rule; other enabled rules can require additional tool fields.

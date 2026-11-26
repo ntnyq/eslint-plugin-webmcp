@@ -11,6 +11,7 @@ The shared analyzer identifies API calls before any rule inspects fields. An arb
 - Static strings, substitution-free templates, literals, arrays, object literals and simple numeric unary expressions. Arbitrary expressions and calls remain unknown.
 - Known object spreads and last-property-wins behavior. Unknown spreads/computed keys invalidate fields before them. Explicit properties after them remain known; absent fields remain unknown.
 - Direct, const-extracted, destructured and sequence-extracted API methods for the unbound-call rule. Explicit `call`, `apply` and `bind` forms are not treated as unbound calls; tool definitions passed through those forms are currently skipped.
+- `waitForToolsUntil()` is recognized for `draft-2026-11-24` and `chrome-2026-11-26`. Analysis checks argument presence and the receiver. Promise settlement and browser readiness are handled at runtime.
 - Named import wrappers identified by the configured source module and imported name.
 
 ## Conservative skips
@@ -31,7 +32,7 @@ JSON Schema mode additionally validates the actual JSON representation with Ajv'
 
 ## Consumer tool arguments
 
-Draft targets and September/October Chrome targets inspect `RegisteredTool` dictionaries. The November Chrome target instead requires the native `Tool` interface: literals and object copies are rejected even when their dictionary fields cannot be read. No accessor or spread is executed to reach this conclusion. Safe const aliases and TypeScript wrappers are resolved using the same ownership limits as other values. Unresolved handles and arbitrary calls remain unknown; discovery provenance, native branding of unknown objects, metadata use and handle freshness are not analyzed.
+September and October targets and `draft-2026-11-02` inspect `RegisteredTool` dictionaries. The other November targets require the native `Tool` interface. Literals and object copies are rejected even when their dictionary fields cannot be read. No accessor or spread is executed to reach this conclusion. Safe const aliases and TypeScript wrappers are resolved using the same ownership limits as other values. Unresolved handles and arbitrary calls remain unknown; discovery provenance, native branding of unknown objects, metadata use and handle freshness are not analyzed.
 
 ## Performance and safety
 

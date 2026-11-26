@@ -18,6 +18,7 @@ export const noUnknownToolProperties = createApiRule({
     if (!isDefinition(call)) {
       return
     }
+
     for (const [name, property] of call.tool?.properties ?? []) {
       if (
         !PROFILES[analyzer.settings.target].toolProperties.includes(name) &&
@@ -51,10 +52,13 @@ export const validAnnotations = createApiRule({
     const node = isDefinition(call)
       ? call.tool?.properties.get('annotations')?.value
       : undefined
+
     if (!node) {
       return
     }
+
     const fact = readValue(analyzer.source, node)
+
     if (
       fact.kind === 'known' &&
       fact.value !== null &&
@@ -62,12 +66,15 @@ export const validAnnotations = createApiRule({
       typeof fact.value !== 'object'
     ) {
       context.report({ node, messageId: 'dictionary' })
+
       return
     }
+
     for (const [name, property] of readObject(analyzer.source, node)
       ?.properties ?? []) {
       if (PROFILES[analyzer.settings.target].annotations.includes(name)) {
         const value = readValue(analyzer.source, property.value)
+
         if (
           value.kind === 'known' &&
           value.value !== undefined &&

@@ -15,11 +15,13 @@ export const preferToolTitle = createApiRule({
     if (!isDefinition(call) || !call.toolNode) {
       return
     }
+
     const title = getField(call.tool, 'title')
     const value =
       title.kind === 'known'
         ? readValue(analyzer.source, title.node)
         : undefined
+
     if (
       title.kind === 'missing' ||
       (value?.kind === 'known' &&
@@ -50,6 +52,7 @@ export const noPlaceholderDescription = createApiRule({
       ? call.tool?.properties.get('description')?.value
       : undefined
     const description = readString(analyzer.source, node)
+
     if (
       node &&
       description &&
@@ -95,11 +98,13 @@ export const maxDescriptionLength = createApiRule<
     if (!isDefinition(call)) {
       return
     }
+
     const reportDescription = (
       node: Parameters<typeof readString>[1],
       limit: number,
     ) => {
       const description = readString(analyzer.source, node)
+
       if (
         node &&
         description !== undefined &&
@@ -112,11 +117,13 @@ export const maxDescriptionLength = createApiRule<
         })
       }
     }
+
     reportDescription(
       call.tool?.properties.get('description')?.value,
       options.tool ?? 500,
     )
     const schema = call.tool?.properties.get('inputSchema')?.value
+
     if (schema) {
       visitParameters(analyzer.source, schema, (_name, parameter) => {
         reportDescription(
@@ -176,9 +183,11 @@ export const toolNameConvention = createApiRule<[NameOptions], 'convention'>({
       ? call.tool?.properties.get('name')?.value
       : undefined
     const name = readString(analyzer.source, node)
+
     if (!node || name === undefined || !isValidToolName(name)) {
       return
     }
+
     const {
       style = 'snake_case',
       segmentStyle = 'kebab-case',
@@ -191,6 +200,7 @@ export const toolNameConvention = createApiRule<[NameOptions], 'convention'>({
             .split('.')
             .every(segment => NAME_PATTERNS[segmentStyle].test(segment))
         : NAME_PATTERNS[style].test(suffix)
+
     if (!name.startsWith(prefix) || !matchesStyle) {
       context.report({
         node,
@@ -227,6 +237,7 @@ export const requireExplicitAnnotations = createApiRule({
     if (!isDefinition(call) || !call.toolNode) {
       return
     }
+
     const field = getField(call.tool, 'annotations')
     const object =
       field.kind === 'known'
@@ -239,12 +250,14 @@ export const requireExplicitAnnotations = createApiRule({
     const fields = options.fields.filter(name =>
       PROFILES[analyzer.settings.target].annotations.includes(name),
     )
+
     for (const name of fields) {
       const annotation = getField(object, name)
       const hint =
         annotation.kind === 'known'
           ? readValue(analyzer.source, annotation.node)
           : undefined
+
       if (
         field.kind === 'missing' ||
         (value?.kind === 'known' &&

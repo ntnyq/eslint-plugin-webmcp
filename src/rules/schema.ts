@@ -20,6 +20,7 @@ function containsBigInt(value: StaticValue): boolean {
   if (typeof value === 'bigint') {
     return true
   }
+
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -35,6 +36,7 @@ function getValidator(): Ajv2020 {
     allErrors: false,
     validateFormats: false,
   })
+
   return validator
 }
 
@@ -44,6 +46,7 @@ function readSchemaObject(
 ): ObjectFacts | undefined {
   const object = readObject(source, node)
   const serializer = getField(object, 'toJSON')
+
   // Unknown spreads can supply a serializer that replaces this entire branch.
   if (
     serializer.kind === 'missing' ||
@@ -52,6 +55,7 @@ function readSchemaObject(
   ) {
     return object
   }
+
   return undefined
 }
 
@@ -72,13 +76,17 @@ export function visitParameters(
   budget?: { remaining: number },
 ): void {
   const remaining = budget ?? { remaining: 1000 }
+
   if (depth > 20 || remaining.remaining-- <= 0) {
     return
   }
+
   const object = readSchemaObject(source, node)
+
   if (!object) {
     return
   }
+
   for (const [key, property] of object.properties) {
     if (
       ['properties', '$defs', 'patternProperties', 'dependentSchemas'].includes(
@@ -90,6 +98,7 @@ export function visitParameters(
         if (key === 'properties' && readSchemaObject(source, child.value)) {
           visit(name, child.value)
         }
+
         visitParameters(source, child.value, visit, depth + 1, remaining)
       }
     } else if (
@@ -110,6 +119,7 @@ export function visitParameters(
     } else if (['allOf', 'anyOf', 'oneOf', 'prefixItems'].includes(key)) {
       const array = resolveExpression(source, property.value)
       const elements = array.type === 'ArrayExpression' ? array.elements : []
+
       for (const child of elements) {
         if (child && child.type !== 'SpreadElement') {
           visitParameters(source, child, visit, depth + 1, remaining)
@@ -165,33 +175,45 @@ function createSchemaRule(property: 'inputSchema' | 'outputSchema') {
       ) {
         return
       }
+
       const node = isDefinition(call)
         ? call.tool?.properties.get(property)?.value
         : undefined
+
       if (!node) {
         return
       }
+
       const fact = readValue(analyzer.source, node)
+
       if (fact.kind !== 'known' || fact.value === undefined) {
         return
       }
+
       if (fact.value === null || typeof fact.value !== 'object') {
         context.report({ node, messageId: 'object' })
+
         return
       }
+
       if (containsBigInt(fact.value)) {
         context.report({ node, messageId: 'serialization' })
+
         return
       }
+
       if (options.mode !== 'json-schema') {
         return
       }
+
       // Validation applies to the JSON representation actually sent to the platform.
       // oxlint-disable-next-line unicorn/prefer-structured-clone -- Validate JSON wire semantics, including omitted undefined fields.
       const schema: unknown = JSON.parse(JSON.stringify(fact.value))
+
       if (typeof schema !== 'object' || schema === null) {
         return
       }
+
       if ('$schema' in schema) {
         if (typeof schema.$schema !== 'string') {
           context.report({
@@ -199,8 +221,10 @@ function createSchemaRule(property: 'inputSchema' | 'outputSchema') {
             messageId: 'schema',
             data: { reason: '$schema must be a string' },
           })
+
           return
         }
+
         if (
           schema.$schema !== 'https://json-schema.org/draft/2020-12/schema' &&
           schema.$schema !== 'https://json-schema.org/draft/2020-12/schema#'
@@ -208,7 +232,9 @@ function createSchemaRule(property: 'inputSchema' | 'outputSchema') {
           return
         }
       }
+
       const ajv = getValidator()
+
       if (!ajv.validateSchema(schema)) {
         context.report({
           node,
@@ -234,30 +260,40 @@ export const preferParameterDescriptions = createApiRule({
     const node = isDefinition(call)
       ? call.tool?.properties.get('inputSchema')?.value
       : undefined
+
     if (!node) {
       return
     }
+
     visitParameters(analyzer.source, node, (name, schema) => {
       const object = readObject(analyzer.source, schema)
+
       if (!object) {
         return
       }
+
       const hasReference = ['$ref', '$dynamicRef'].some(property => {
         const field = getField(object, property)
+
         if (field.kind !== 'known') {
           return field.kind === 'unknown'
         }
+
         const value = readValue(analyzer.source, field.node)
+
         return value.kind === 'unknown' || value.value !== undefined
       })
+
       if (hasReference) {
         return
       }
+
       const description = getField(object, 'description')
       const value =
         description.kind === 'known'
           ? readValue(analyzer.source, description.node)
           : undefined
+
       if (
         description.kind === 'missing' ||
         (value?.kind === 'known' &&

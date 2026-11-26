@@ -1,3 +1,4 @@
+import { isCurrentCall } from '../analysis/api'
 import {
   getField,
   readString,
@@ -6,7 +7,6 @@ import {
 } from '../analysis/static'
 import { createApiRule, stringListOption } from '../createRule'
 import { PROFILES } from '../profiles'
-import { isCurrentCall } from './apiOptions'
 
 export const validRegisteredTool = createApiRule({
   name: 'valid-registered-tool',
@@ -23,14 +23,16 @@ export const validRegisteredTool = createApiRule({
   },
   check(call, analyzer, context) {
     if (
-      !isCurrentCall(call) ||
+      !isCurrentCall(call, analyzer.settings.target) ||
       call.method !== 'executeTool' ||
       !call.toolNode
     ) {
       return
     }
+
     const fact = readValue(analyzer.source, call.toolNode)
     const expression = resolveExpression(analyzer.source, call.toolNode)
+
     if (
       PROFILES[analyzer.settings.target].executeToolArgument === 'native-tool'
     ) {
@@ -49,21 +51,26 @@ export const validRegisteredTool = createApiRule({
       ) {
         context.report({ node: call.toolNode, messageId: 'native' })
       }
+
       return
     }
+
     if (
       fact.kind === 'known' &&
       (fact.value === null || typeof fact.value !== 'object')
     ) {
       context.report({ node: call.toolNode, messageId: 'invalid' })
+
       return
     }
+
     for (const property of ['name', 'description', 'window', 'origin']) {
       const field = getField(call.tool, property)
       const value =
         field.kind === 'known'
           ? readValue(analyzer.source, field.node)
           : undefined
+
       if (
         expression.type === 'ArrayExpression' ||
         field.kind === 'missing' ||
@@ -101,12 +108,16 @@ export const noIncompatibleExecuteArguments = createApiRule({
     ) {
       return
     }
+
     const [, node] = call.node.arguments
+
     if (!node) {
       return
     }
+
     const fact = readValue(analyzer.source, node)
     const expression = resolveExpression(analyzer.source, node)
+
     if (PROFILES[analyzer.settings.target].executeInput === 'optional-object') {
       if (
         fact.kind === 'known' &&
@@ -151,8 +162,10 @@ export const noUnknownModelContextEvents = createApiRule({
     ) {
       return
     }
+
     const [node] = call.node.arguments
     const event = readString(analyzer.source, node)
+
     if (
       node &&
       event !== undefined &&

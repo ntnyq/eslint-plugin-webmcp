@@ -197,32 +197,21 @@ tester.run(
 tester.run('valid-registered-tool', rules['valid-registered-tool'], {
   valid: [
     'document.modelContext.executeTool(tool)',
-    'document.modelContext.executeTool({...tool})',
-    'document.modelContext.executeTool({__proto__: tool})',
-    'document.modelContext.executeTool({name: "search", description: "Search", window, origin})',
     'document.modelContext.executeTool()',
     'document.modelContext.executeTool(...args)',
   ],
   invalid: [
-    ...["'search'", 'null', 'false', 'undefined', '42'].map(value => ({
-      code: `document.modelContext.executeTool(${value})`,
-      errors: [{ messageId: 'invalid' as const }],
-    })),
-    {
-      code: 'document.modelContext.executeTool({})',
-      errors: Array.from({ length: 4 }, () => ({
-        messageId: 'missing' as const,
-      })),
-    },
-    {
-      code: 'document.modelContext.executeTool({name: "search", description: "Search", origin})',
-      errors: [{ messageId: 'missing', data: { property: 'window' } }],
-    },
-    {
-      code: 'document.modelContext.executeTool({name: "search", description: "Search", window, origin: undefined})',
-      errors: [{ messageId: 'missing', data: { property: 'origin' } }],
-    },
-  ],
+    "'search'",
+    'null',
+    'false',
+    'undefined',
+    '42',
+    '{}',
+    '{...tool}',
+  ].map(value => ({
+    code: `document.modelContext.executeTool(${value})`,
+    errors: [{ messageId: 'native' as const }],
+  })),
 })
 
 tester.run(

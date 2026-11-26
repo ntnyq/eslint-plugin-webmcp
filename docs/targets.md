@@ -2,9 +2,36 @@
 
 The target is a static analysis contract, not browser feature detection. Diagnostics depend on the source, plugin version, rule options and `settings.webmcp`; they never query a browser or the network.
 
+## draft-2026-11-24
+
+The default profile follows the [WebMCP specification at commit 47e2b993ea9fd0599ffca3f58588eb3fd5f474f2](https://github.com/webmachinelearning/webmcp/blob/47e2b993ea9fd0599ffca3f58588eb3fd5f474f2/index.bs), published as the [2026-11-24 community group draft](https://github.com/webmachinelearning/webmcp/blob/7ecbc64d4f1832340be4afb581aff8f9106f9060/index.html).
+
+`getTools()` returns native `Tool` handles, and `executeTool()` requires the original handle for a specific registration. Each handle has a nullable `source` property for the window of the registering document. The schema properties and annotations can also be `null` when omitted at registration. The plugin checks execution arguments. Discovery metadata access and handle lifetime are outside static analysis. See [upstream PR #348](https://github.com/webmachinelearning/webmcp/pull/348).
+
+`waitForToolsUntil(promise)` signals tool readiness to the browser agent while work such as asynchronous registration is pending. The existing API rules check required argument presence and receiver binding. The readiness signal, promise settlement and browser observation timing are runtime behavior. The registration dictionaries, option names and event names retain their previous contracts. See [upstream PR #373](https://github.com/webmachinelearning/webmcp/pull/373).
+
+## chrome-2026-11-26
+
+This profile pins Chromium at [ac4ad32645bebf8d9a670ed0ce73ef870e2f3471](https://chromium.googlesource.com/chromium/src/+/ac4ad32645bebf8d9a670ed0ce73ef870e2f3471), development version 160.0.8185.0. Its checked contract matches `draft-2026-11-24`. The [ModelContext IDL](https://chromium.googlesource.com/chromium/src/+/ac4ad32645bebf8d9a670ed0ce73ef870e2f3471/third_party/blink/renderer/core/script_tools/model_context.idl) now exposes `waitForToolsUntil()` under the main WebMCP flag, and the [Tool IDL](https://chromium.googlesource.com/chromium/src/+/ac4ad32645bebf8d9a670ed0ce73ef870e2f3471/third_party/blink/renderer/core/script_tools/tool.idl) uses `source`. The Chromium-only `resumeTool()` remains experimental and outside the checked surface.
+
+## Migrating to the late November targets
+
+Both presets and rules without an explicit target now use `draft-2026-11-24`. To keep the previous default diagnostics, pin `target: 'draft-2026-11-02'` in `createConfig` or `settings.webmcp.target`. All existing explicit targets keep their original diagnostics.
+
+- Pass the original handle from `getTools()` to `executeTool()`. Hand-written objects and spread copies of a handle now trigger `valid-registered-tool` under the default target.
+- When moving from `chrome-2026-11-07`, read `tool.source` in place of `tool.window`. Account for `null` when the registering document is no longer active.
+- Call `waitForToolsUntil(pendingRegistration)` on `document.modelContext` when using the readiness API. Web IDL converts JavaScript argument values to promises, so the lint rule checks omission and leaves value conversion to the platform. See the [Web IDL promise conversion](https://webidl.spec.whatwg.org/#es-promise).
+
+```js
+const [tool] = await document.modelContext.getTools()
+if (tool) {
+  await document.modelContext.executeTool(tool, { query: 'keyboard' })
+}
+```
+
 ## draft-2026-11-02
 
-The default profile follows the [WebMCP specification at commit 6cd745ac8a186122bd3f4aeaeb1d6cfa820251d2](https://github.com/webmachinelearning/webmcp/blob/6cd745ac8a186122bd3f4aeaeb1d6cfa820251d2/index.bs), the community draft dated 2026-11-02, inspected on 2026-11-07.
+This historical profile follows the [WebMCP specification at commit 6cd745ac8a186122bd3f4aeaeb1d6cfa820251d2](https://github.com/webmachinelearning/webmcp/blob/6cd745ac8a186122bd3f4aeaeb1d6cfa820251d2/index.bs), the community draft dated 2026-11-02, inspected on 2026-11-07.
 
 It retains the October draft's document receiver, registration lifecycle, annotations, events and optional object input. Tool definitions and discovered `RegisteredTool` dictionaries add optional `object outputSchema`. The new `valid-output-schema` rule shares the input-schema platform and opt-in JSON Schema 2020-12 checks. No schema is required, and callback results are not analyzed. `executeTool` still accepts a `RegisteredTool` dictionary with `name`, `description`, `window` and `origin`.
 
@@ -20,19 +47,12 @@ The pinned implementation also contains `resumeTool()` and `waitForToolsUntil()`
 
 ## Migrating to the November targets
 
-The default target, both presets and manually enabled rules without target settings now use `draft-2026-11-02`. All four explicit September/October targets retain their original semantics.
+The early November update changed the default to `draft-2026-11-02`. These migration details apply to the explicit `draft-2026-11-02` and `chrome-2026-11-07` targets.
 
-- To keep the previous default diagnostics, pin `target: 'draft-2026-10-13'` in `createConfig` or `settings.webmcp.target`. Earlier September pins also remain supported.
+- To keep the October default diagnostics, pin `target: 'draft-2026-10-13'` in `createConfig` or `settings.webmcp.target`.
 - November targets recognize optional `outputSchema`. Earlier targets continue to report it through `no-unknown-tool-properties`; `valid-output-schema` skips unsupported targets even when manually enabled.
 - `valid-output-schema` is an error in both presets. Its default platform mode accepts omission/`undefined`, rejects fully known primitives/null and BigInt serialization failures, and skips dynamic schemas. JSON Schema 2020-12 validation is opt-in, just as for `valid-input-schema`.
-- When migrating to `chrome-2026-11-07`, pass the original `Tool` from `getTools()` into `executeTool()`. Do not reconstruct it from metadata or spread it. Draft targets continue accepting complete dictionaries.
-
-```js
-const [tool] = await document.modelContext.getTools()
-if (tool) {
-  await document.modelContext.executeTool(tool, { query: 'keyboard' })
-}
-```
+- When migrating to `chrome-2026-11-07`, pass the original `Tool` from `getTools()` into `executeTool()`. The `draft-2026-11-02` target accepts complete dictionaries.
 
 ## draft-2026-10-13
 
@@ -96,4 +116,4 @@ This profile does not select or claim support for a specific stable Chrome versi
 - [Secure Contexts: potentially trustworthy origins](https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy): origin trust is environment-dependent; this release checks parseability, not a simplified HTTPS allowlist.
 - [ESLint plugin documentation](https://eslint.org/docs/latest/extend/plugins): Flat Config plugin and preset contracts.
 
-September sources were checked on 2026-09-07; October sources were checked on 2026-10-14; November sources were checked on 2026-11-07. The package never fetches them while linting.
+September sources were checked on 2026-09-07, October sources on 2026-10-14, and November sources on 2026-11-07 and 2026-11-26. The package never fetches them while linting.
